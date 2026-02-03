@@ -1,0 +1,11 @@
+Backend/appsettings.Development.json
+Backend/.env
+Backend/bin/
+Backend/obj/
+Backend/.vs/
+Backend/.vscode/
+Backend/*.user
+Backend/*.suo
+Backend/.DS_Store
+Backend/Thumbs.db
+Backend/*.log
