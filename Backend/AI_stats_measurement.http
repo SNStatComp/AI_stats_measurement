@@ -1,0 +1,6 @@
+@AI_stats_measurement_HostAddress = http://localhost:5201
+
+GET {{AI_stats_measurement_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
