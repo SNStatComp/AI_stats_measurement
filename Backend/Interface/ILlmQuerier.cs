@@ -1,8 +1,9 @@
-﻿using System;
-
-public class Class1
+﻿namespace AI_stats_measurement.Interface
 {
-	public Class1()
-	{
-	}
+    public interface ILlmQuerier
+    {
+        string Name { get;}
+
+        Task<string> AskAsync(Prompt prompt, CancellationToken ct = default);
+    }
 }

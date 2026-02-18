@@ -1,15 +1,18 @@
+using AI_stats_measurement.Clients;
+using AI_stats_measurement.Interface;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-builder.Services.AddOpenApi();
+builder.Services.AddControllers();
+
+builder.Services.AddSingleton<ILlmQuerier, ChatGPTQuerier>();
+builder.Services.AddSingleton<ILlmQuerier, GeminiQuerier>();
+builder.Services.AddSingleton<ILlmQuerier, GrokQuerier>();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    app.MapOpenApi();
-}
+app.MapControllers();
 
 app.UseHttpsRedirection();
 
