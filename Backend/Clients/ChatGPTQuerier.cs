@@ -9,7 +9,7 @@ namespace AI_stats_measurement.Clients
     {
         private readonly OpenAIClient _client;
 
-        public string Name => "OpenAI";
+        public string Name => "gpt-4o-mini";
 
         public ChatGPTQuerier(IConfiguration config)
         {
@@ -18,15 +18,13 @@ namespace AI_stats_measurement.Clients
 
         public async Task<string> AskAsync(Prompt prompt, CancellationToken ct = default)
         {
-            var chat = _client.GetChatClient("gpt-4o-mini");
+            var chat = _client.GetChatClient(Name);
 
             var response = await chat.CompleteChatAsync(
                 new ChatMessage[]
                 {
-                    new SystemChatMessage(
-                        "Je bent ChatGPT, een behulpzame en neutrale assistent voor algemene kennisvragen.Beantwoord vragen kort en duidelijk, in correct Nederlands. Vermeld welke bron je hebt gebruikt als link."
-                        ),
-                new UserChatMessage(prompt.Question) 
+                    new SystemChatMessage(prompt.Instruction),
+                    new UserChatMessage(prompt.Question) 
                 }             
             );
 

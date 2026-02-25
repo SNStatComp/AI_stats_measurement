@@ -1,5 +1,6 @@
 ﻿using AI_stats_measurement.Interface;
 using AI_stats_measurement.Models;
+using AI_stats_measurement.Services;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AI_stats_measurement.Controllers
@@ -8,36 +9,22 @@ namespace AI_stats_measurement.Controllers
     [Route("api/llm")]
     public class LlmController : ControllerBase
     {
-        private readonly IEnumerable<ILlmQuerier> _queriers;
+        private readonly LlmAggregator _llmAggregator;
 
-        public LlmController(IEnumerable<ILlmQuerier> queriers)
+        public LlmController(LlmAggregator llmAggregator)
         {
-            _queriers = queriers;
+            _llmAggregator = llmAggregator;
         }
 
         [HttpPost("ask")]
-        public async Task<ActionResult<List<LlmAnswer>>> AskAll([FromBody] Prompt prompt, CancellationToken ct)
+        public async Task<ActionResult<List<ModelResponse>>> AskAll([FromBody] List<Prompt> prompt, CancellationToken ct)
         {
             if (prompt is null)
                 return BadRequest("Prompt is required.");
 
-            var tasks = _queriers.Select(async q =>
-            {
-                try
-                {
-                    var text = await q.AskAsync(prompt, ct);
-                    return new ModelResponse(prompt.Id,q.Name, text, null);
-                }
-                catch (Exception ex)
-                {
-                    return new ModelResponse(prompt.Id, q.Name, null, ex.Message);
-                }
-            });
+            var results = await _llmAggregator.AskAllAsync(prompt, ct);
 
-            var results = (await Task.WhenAll(tasks)).ToList();
             return Ok(results);
         }
-
-        public record LlmAnswer(string Provider, string? Answer, string? Error);
     }
 }
