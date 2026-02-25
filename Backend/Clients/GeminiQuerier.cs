@@ -9,7 +9,7 @@ namespace AI_stats_measurement.Clients
     {
         private readonly Client _client;
 
-        public string Name => "gemini";
+        public string Name => "gemini-2.5-flash-lite-preview-09-2025";
 
         public GeminiQuerier(IConfiguration config)
         {
@@ -18,7 +18,7 @@ namespace AI_stats_measurement.Clients
 
         public async Task<string> AskAsync(Prompt prompt, CancellationToken ct = default)
         {
-            string systemMessage = "Je bent Gemini, een behulpzame en neutrale assistent voor algemene kennisvragen.Beantwoord vragen kort en duidelijk, in correct Nederlands. Vermeld welke bron je hebt gebruikt als link.";
+            string systemMessage = prompt.Instruction;
             var response = await _client.Models.GenerateContentAsync(
                 model: "gemini-2.5-flash-lite-preview-09-2025",
                 contents: systemMessage + prompt.Question,

@@ -1,14 +1,23 @@
 using AI_stats_measurement.Clients;
+using AI_stats_measurement.Data;
 using AI_stats_measurement.Interface;
+using AI_stats_measurement.Services;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddDbContext<AIMeasureDbContext>(options =>
+    options.UseSqlServer(
+        builder.Configuration.GetConnectionString("Default")));
 
 // Add services to the container.
 builder.Services.AddControllers();
 
-builder.Services.AddSingleton<ILlmQuerier, ChatGPTQuerier>();
-builder.Services.AddSingleton<ILlmQuerier, GeminiQuerier>();
-builder.Services.AddSingleton<ILlmQuerier, GrokQuerier>();
+builder.Services.AddScoped<ILlmQuerier, ChatGPTQuerier>();
+builder.Services.AddScoped<ILlmQuerier, GeminiQuerier>();
+builder.Services.AddScoped<ILlmQuerier, GrokQuerier>();
+
+builder.Services.AddScoped<LlmAggregator>();
 
 var app = builder.Build();
 
