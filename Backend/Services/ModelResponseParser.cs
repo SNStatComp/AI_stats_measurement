@@ -1,4 +1,6 @@
-﻿using System.Globalization;
+﻿using AI_stats_measurement.Models;
+using Newtonsoft.Json.Linq;
+using System.Globalization;
 using System.Text.RegularExpressions;
 
 namespace AI_stats_measurement.Services;
@@ -14,7 +16,7 @@ public static class ModelResponseParser
             \d{1,3}(?:[.\s]\d{3})+(?:[.,]\d+)?  # 827.000, 1 200 000, 1.234.567,89
             )
             \s*
-            (?<unit>miljoen|miljard|duizend)?
+            (?<unit>miljoen|miljard|duizend|mln|mjn)?
             ",
         RegexOptions.Compiled);
 
@@ -32,10 +34,10 @@ public static class ModelResponseParser
         RegexOptions.Compiled
     );
 
-    public static (long? answer, string? source) Parse(string? rawText)
+    public static ParsedModelResponse Parse(int responseId,string? rawText)
     {
         if (string.IsNullOrWhiteSpace(rawText))
-            return (null, null);
+            return new ParsedModelResponse(0,"");
 
         var text = rawText.Trim();
 
@@ -85,7 +87,7 @@ public static class ModelResponseParser
             break;
         }
 
-        return (best, source);
+        return new ParsedModelResponse(Convert.ToDecimal(best), source);
     }
 
     private static decimal UnitMultiplier(string? unit)
