@@ -1,3 +1,4 @@
+using AI_stats_measurement.Backend.Services;
 using AI_stats_measurement.Clients;
 using AI_stats_measurement.Data;
 using AI_stats_measurement.Interface;
@@ -18,6 +19,12 @@ builder.Services.AddScoped<ILlmQuerier, GeminiQuerier>();
 builder.Services.AddScoped<ILlmQuerier, GrokQuerier>();
 
 builder.Services.AddScoped<LlmAggregator>();
+
+builder.Services.AddScoped<FactChecker>(sp =>
+    new FactChecker(0.05m)
+);
+
+builder.Services.AddScoped<EvaluationPipeline>();
 
 var app = builder.Build();
 

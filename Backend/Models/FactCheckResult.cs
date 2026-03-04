@@ -4,16 +4,13 @@ public class FactCheckResult
 {
     public int Id { get; init; }
     public int ParsedModelResponseId { get; private set; }
-    public bool AnswerIsPresentInTable { get; set; }
-    public double Score { get; private set; }
-    public string? Reason { get; private set; }
-    public int RunId { get; private set; }
-    public DateTime DateTime { get; private set; }
-    public FactCheckResult(int parsedModelResponseId, bool answerIsPresentInTable, double score, string reason, int runId) { 
+    public decimal SquareMeanRootError { get; private set; }
+    public decimal RelativeError { get; private set; }
+    public bool IsCorrect { get; private set; }
+    public FactCheckResult(int parsedModelResponseId, decimal squareMeanRootError, decimal relativeError, bool isCorrect) { 
         ParsedModelResponseId = parsedModelResponseId;
-        AnswerIsPresentInTable = answerIsPresentInTable;
-        Score = Score;
-        Reason = reason;
-        RunId = runId;
+        SquareMeanRootError = squareMeanRootError;
+        RelativeError = relativeError;
+        IsCorrect = isCorrect;
     }
 }

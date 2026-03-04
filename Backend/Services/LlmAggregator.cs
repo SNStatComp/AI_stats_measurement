@@ -1,6 +1,7 @@
-﻿using AI_stats_measurement.Models;
+﻿using AI_stats_measurement.Data;
 using AI_stats_measurement.Interface;
-using AI_stats_measurement.Data;
+using AI_stats_measurement.Models;
+using Microsoft.EntityFrameworkCore;
 
 namespace AI_stats_measurement.Services
 {
@@ -49,5 +50,31 @@ namespace AI_stats_measurement.Services
             }
         }
 
+        public async Task<List<ModelResponse>> AskByPromptIdsAsync(List<int> promptIds, CancellationToken ct)
+        {
+            var tasks = new List<Task<ModelResponse>>();
+
+            var prompts = await _context.Prompts
+                .Where(p => promptIds.Contains(p.Id))
+                .ToListAsync(ct);
+
+            if (prompts.Count == 0)
+                return new List<ModelResponse>();                  
+
+            foreach (var querier in _queriers)
+            {
+                foreach (var prompt in prompts)
+                {
+                    tasks.Add(AskSingleAsync(querier, prompt, ct));
+                }
+            }
+
+            var results = await Task.WhenAll(tasks);
+
+            _context.ModelResponses.AddRange(results);
+            await _context.SaveChangesAsync(ct);
+
+            return results.ToList();
+        }
     }
 }
