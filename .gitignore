@@ -1,14 +1,28 @@
-appsettings.Development.json
-.env
+# .NET
 bin/
 obj/
 TestResults/
+coverage/
 .vs/
-.vscode/
-.idea/
 *.user
 *.suo
+
+# ASP.NET
+appsettings.Development.json
+.env
+
+# Node / Vite
+node_modules/
+dist/
+.vite/
+
+# IDE
+.vscode/
+.idea/
+
+# Logs
 *.log
+
+# OS
 .DS_Store
 Thumbs.db
-coverage/
