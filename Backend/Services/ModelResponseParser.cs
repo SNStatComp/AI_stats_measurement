@@ -1,146 +1,126 @@
-﻿using AI_stats_measurement.Models;
-using Newtonsoft.Json.Linq;
+﻿using AI_stats_measurement.Data;
+using AI_stats_measurement.Models;
+using Microsoft.Recognizers.Text;
+using Microsoft.Recognizers.Text.Number;
+using System;
 using System.Globalization;
+using System.Security.Policy;
 using System.Text.RegularExpressions;
 
 namespace AI_stats_measurement.Services;
-public static class ModelResponseParser
+
+public class ModelResponseParser
 {
-    // Matches: 100 miljoen, 1,2 miljoen, 3.4 miljard, 12 duizend, 1.200.000, 1 200 000, 2020, 827000, 17,9
-    private static readonly Regex NumberWithUnit =
-        new Regex(
-            @"(?ix)
-            (?<num>
-            \d+(?:[.,]\d+)?               # 2020, 827000, 17,9
-            |
-            \d{1,3}(?:[.\s]\d{3})+(?:[.,]\d+)?  # 827.000, 1 200 000, 1.234.567,89
-            )
-            \s*
-            (?<unit>miljoen|miljard|duizend|mln|mjn)?
-            ",
-        RegexOptions.Compiled);
+    private static AIMeasureDbContext _context;
 
-    // Matches: "bron: CBS Statline", "source: CBS Statline", **Bron:**
-    private static readonly Regex SourceRegex =
-        new Regex(
-            @"(?im)^\s*\*{0,2}(bron|source)\*{0,2}\s*:\s*(?<src>.+)$" 
-            , 
-            RegexOptions.Compiled);
+    ModelResponseParser(AIMeasureDbContext context)
+    {
+        _context = context;
+    }
 
-    // Matches: "https://cbs.nl"
+    // This regex matches URLs starting with http:// or https:// and continues until a whitespace, closing parenthesis, or closing square bracket is encountered.
     private static readonly Regex UrlRegex =
-    new Regex(
-        @"https?://[^\s\)\]]+",
-        RegexOptions.Compiled
-    );
+        new Regex(@"https?://[^\s\)\]]+", RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
-    public static ParsedModelResponse Parse(int responseId,string? rawText)
+    // Parses the raw text response from the model to extract a numeric answer and sources.
+    public static ParsedModelResponse Parse(int responseId, string? rawText)
     {
         if (string.IsNullOrWhiteSpace(rawText))
-            return new ParsedModelResponse(0,"");
+            return new ParsedModelResponse(responseId,0 , new List<string>());
 
         var text = rawText.Trim();
 
-        // Extract source
-        string? source = null;
-        var srcMatch = SourceRegex.Match(text);
-        var urlMatch = UrlRegex.Match(text);
-        if (urlMatch.Success)
+        List<string> sources = ExtractSource(text);
+
+        // Dutch culture
+        var results = NumberRecognizer.RecognizeNumber(text, Culture.Dutch);
+
+        decimal? best = null;
+
+        foreach (var result in results)
         {
-            source = urlMatch.Value;
-        }
-        else if (srcMatch.Success)
-        {
-            source = srcMatch.Groups["src"].Value.Trim();
-        }
+            // We are only interested in results that have a resolution with a "value" key that can be parsed as a decimal number.
+            if (result.Resolution == null) continue;
 
-        // Find first numeric candidate
-        long? best = null;
+            if (!result.Resolution.TryGetValue("value", out var valueObj)) continue;
 
-        foreach (Match m in NumberWithUnit.Matches(text))
-        {
-            if (!m.Success) continue;
+            var valueText = valueObj?.ToString();
+            if (string.IsNullOrWhiteSpace(valueText)) continue;
 
-            var numStr = m.Groups["num"].Value;
-            var unitStr = m.Groups["unit"].Success
-                ? m.Groups["unit"].Value.ToLowerInvariant()
-                : null;
+            // Try to parse the value as a decimal number using invariant culture to ensure consistent parsing regardless of locale.
+            if (!decimal.TryParse(
+                    valueText,
+                    NumberStyles.Number | NumberStyles.AllowLeadingSign,
+                    CultureInfo.InvariantCulture,
+                    out var value))
+            {
+                continue;
+            }
 
-            if (!TryParseDutchNumber(numStr, out decimal value))
+            // skip likely years
+            if (IsLikelyYear(value))
                 continue;
 
-            var multiplier = UnitMultiplier(unitStr);
-            var scaled = value * multiplier;
-
-            if (scaled < long.MinValue || scaled > long.MaxValue)
-                continue;
-
-            var candidate = (long)Math.Round(
-                scaled, 0, MidpointRounding.AwayFromZero);
-
-            // Skip likely years
-            if (unitStr == null && IsLikelyYear(candidate))
-                continue;
-
-            // First meaningful number wins
-            best = candidate;
+            best = value;
             break;
         }
 
-        return new ParsedModelResponse(Convert.ToDecimal(best), source);
+        var response = new ParsedModelResponse(responseId, best ?? 0, sources);  
+
+        return response;     
     }
 
-    private static decimal UnitMultiplier(string? unit)
+private static List<string> ExtractSource(string text)
     {
-        return unit switch
+        var sources = new List<string>();
+
+        foreach (Match match in UrlRegex.Matches(text))
         {
-            "duizend" => 1_000m,
-            "k" => 1_000m,
-            "miljoen" => 1_000_000m,
-            "mln" => 1_000_000m,
-            "m" => 1_000_000m,      
-            "miljard" => 1_000_000_000m,
-            "bn" => 1_000_000_000m,
-            _ => 1m
-        };
+            var url = match.Value.Trim();
+
+            // Do not add duplicate URLs
+            if (!sources.Contains(url))
+                sources.Add(url);
+        }
+
+        var lines = text.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+
+        foreach (var line in lines)
+        {
+            var trimmed = line.Trim().Replace("**", "");
+
+            // Look for lines that contain "bron:" or "source:" (case-insensitive) and extract the text following the colon as a potential source.
+            if (trimmed.Contains("bron:", StringComparison.OrdinalIgnoreCase) ||
+                trimmed.Contains("source:", StringComparison.OrdinalIgnoreCase))
+            {
+                var idx = trimmed.IndexOf(':');
+
+                // If there is no colon or if the colon is at the end of the line, skip this line as it does not contain a valid source.
+                if (idx < 0 || idx >= trimmed.Length - 1)
+                    continue;
+
+                var source = trimmed[(idx + 1)..].Trim();
+
+                // If the source contains a comma or a dash, take only the part before the comma or dash as the source, as these characters often indicate additional information that is not part of the source name.
+                var commaIndex = source.IndexOf(',');
+                if (commaIndex >= 0) 
+                    source = source[..commaIndex];
+
+                var dashIndex = source.IndexOf('-');
+                if (dashIndex >= 0)
+                    source = source[..dashIndex];
+
+                // remove trailing dots and trim whitespace
+                sources.Add(source.Trim().TrimEnd('.'));
+            }
+        }
+
+        return sources;
     }
 
-    private static bool TryParseDutchNumber(string input, out decimal value)
+    // This method checks if a given decimal value is likely to be a year, based on a reasonable range of years.
+    private static bool IsLikelyYear(decimal value)
     {
-        // Normalize thousand separators and decimal separators for NL formats:
-        // "1.234,56" -> "1234.56"
-        // "1 234,56" -> "1234.56"
-        // "1,2" -> "1.2"
-        var s = input.Trim();
-
-        // remove spaces used as thousand separators
-        s = s.Replace(" ", "");
-
-        // If both '.' and ',' exist: assume '.' thousands and ',' decimals (NL style)
-        if (s.Contains('.') && s.Contains(','))
-        {
-            s = s.Replace(".", "");
-            s = s.Replace(",", ".");
-        }
-        else if (s.Contains(',') && !s.Contains('.'))
-        {
-            // only comma: treat as decimal separator
-            s = s.Replace(",", ".");
-        }
-        else
-        {
-            // only dots or none: could be thousand separators (1.200.000) or decimals (3.14)
-            // Heuristic: if dot is followed by exactly 3 digits repeatedly => thousands
-            if (Regex.IsMatch(s, @"^\d{1,3}(\.\d{3})+$"))
-                s = s.Replace(".", "");
-        }
-
-        return decimal.TryParse(s, NumberStyles.Number | NumberStyles.AllowLeadingSign,
-            CultureInfo.InvariantCulture, out value);
-    }
-
-    private static bool IsLikelyYear(long value)
-    {
-        return value >= 1900 && value <= 2050;
+        return value >= 1990 && value <= 2030;
     }
 }

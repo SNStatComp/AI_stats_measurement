@@ -1,4 +1,5 @@
 ﻿using AI_stats_measurement.Backend.Models;
+using AI_stats_measurement.Models;
 using System;
 using System.Security.Policy;
 
@@ -16,6 +17,7 @@ public class Prompt
     public DateTime CreatedUtc { get; private set; } = DateTime.UtcNow;
 
     public List<PromptDimension> Dimensions { get; private set; } = new();
+    public List<ModelResponse> ModelResponses { get; set; } = new();
 
     private Prompt() { } 
 
@@ -33,6 +35,6 @@ public class Prompt
 
     public void AddDimension(string name, string value)
     {
-        Dimensions.Add(new PromptDimension(name, value));
+        Dimensions.Add(new PromptDimension(Id, name, value));
     }
 }

@@ -47,6 +47,6 @@ namespace AI_stats_measurement.Controllers
 
             var results = await _evaluationPipeline.RunAsync(promptIds, ct);
             return Ok(results);
-        }
+        }      
     }
 }

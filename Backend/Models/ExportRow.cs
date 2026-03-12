@@ -12,13 +12,18 @@
             public decimal ExpectedAnswer { get; private set; }
             public string ExpectedSource { get; private set; } = null!;
             public decimal ActualAnswer { get; private set; }
-            public string ActualSource { get; private set; } = null!;
+            public List<string> ActualSource { get; private set; } = null!;
             public string Provider { get; private set; } = null!;
             public string? RawText { get; private set; }
             public string? Exception { get; private set; }
             public decimal SquareMeanRootError { get; private set; }
             public decimal RelativeError { get; private set; }
-            public bool IsCorrect { get; private set; }
+            public bool AnswerIsCorrect { get; private set; }
+            public bool SourceIsCorrect { get; private set; }
+            public decimal AverageRelativeError { get; private set; }
+            public decimal AverageAnswer { get; private set; }
+            public decimal AverageAnswerCorrectness { get; private set; }
+            public decimal AverageSourceCorrectness { get; private set; }
             public DateTime CreatedUtc { get; private set; }
 
             private ExportRow() { } 
@@ -29,13 +34,18 @@
                 decimal expectedAnswer,
                 string expectedSource,
                 decimal actualAnswer,
-                string actualSource,
+                List<string> actualSource,
                 string provider,
                 string? rawText,
                 string? exception,
                 decimal squareMeanRootError,
                 decimal relativeError,
-                bool isCorrect,
+                bool answerIsCorrect,
+                bool sourceIsCorrect,
+                decimal averageRelativeError,
+                decimal averageAnswer ,
+                decimal averageAnswerCorrectness ,
+                decimal averageSourceCorrectness ,
                 DateTime createdUtc)
             {
                 Theme = theme;
@@ -49,7 +59,12 @@
                 Exception = exception;
                 SquareMeanRootError = squareMeanRootError;
                 RelativeError = relativeError;
-                IsCorrect = isCorrect;
+                AnswerIsCorrect = answerIsCorrect;
+                SourceIsCorrect = sourceIsCorrect;
+                AverageRelativeError = averageRelativeError;
+                AverageAnswer = averageAnswer;
+                AverageAnswerCorrectness = averageAnswerCorrectness;
+                AverageSourceCorrectness = averageSourceCorrectness;
                 CreatedUtc = createdUtc;
             }
         }
