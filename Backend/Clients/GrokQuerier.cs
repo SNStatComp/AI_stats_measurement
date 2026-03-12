@@ -13,7 +13,8 @@ namespace AI_stats_measurement.Clients
         private readonly HttpClient _httpClient;
         private readonly string _apiKey;
 
-        public string Name => "grok-4-1-fast-reasoning";
+        public string Name => "grok-4-1-fast-non-reasoning";
+
         public GrokQuerier(IConfiguration config)
         {
             _apiKey = config["LlmKeys:Grok"];

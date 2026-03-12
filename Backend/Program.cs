@@ -11,6 +11,17 @@ builder.Services.AddDbContext<AIMeasureDbContext>(options =>
     options.UseSqlServer(
         builder.Configuration.GetConnectionString("Default")));
 
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowFrontend", policy =>
+    {
+        policy
+            .WithOrigins("http://localhost:5173")
+            .AllowAnyHeader()
+            .AllowAnyMethod();
+    });
+});
+
 // Add services to the container.
 builder.Services.AddControllers();
 
@@ -21,15 +32,17 @@ builder.Services.AddScoped<ILlmQuerier, GrokQuerier>();
 builder.Services.AddScoped<LlmAggregator>();
 
 builder.Services.AddScoped<FactChecker>(sp =>
-    new FactChecker(0.05m)
+    new FactChecker(0.05m, "CBS")
 );
 
 builder.Services.AddScoped<EvaluationPipeline>();
 
 var app = builder.Build();
 
-app.MapControllers();
+//app.UseHttpsRedirection();
 
-app.UseHttpsRedirection();
+app.UseCors("AllowFrontend");   
+
+app.MapControllers();
 
 app.Run();

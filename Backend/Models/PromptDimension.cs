@@ -1,4 +1,6 @@
-﻿namespace AI_stats_measurement.Backend.Models
+﻿using Microsoft.Identity.Client;
+
+namespace AI_stats_measurement.Backend.Models
 {
     public class PromptDimension
     {
@@ -7,10 +9,13 @@
         public string Name { get; private set; } = null!;
         public string Value { get; private set; } = null!;
 
+        public Prompt Prompt { get; set; } = null!;
+
         private PromptDimension() { } 
 
-        public PromptDimension(string name, string value, string? code = null)
+        public PromptDimension(int promptId, string name, string value)
         {
+            PromptId = promptId;
             Name = name;
             Value = value;
         }

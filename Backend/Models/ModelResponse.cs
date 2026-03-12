@@ -12,6 +12,11 @@ namespace AI_stats_measurement.Models
         public string? Exception { get; private set; }
         public DateTime CreatedUtc { get; private set; } = DateTime.UtcNow;
 
+        public Prompt Prompt { get; set; } = null!;
+        public ParsedModelResponse? ParsedResponse { get; set; }
+
+        private ModelResponse() { }
+
         public ModelResponse(int promptId, string provider, string rawText, string exception)
         {
             PromptId = promptId;

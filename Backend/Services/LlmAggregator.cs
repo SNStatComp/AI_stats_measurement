@@ -30,10 +30,6 @@ namespace AI_stats_measurement.Services
 
             var results = await Task.WhenAll(tasks);
 
-            _context.ModelResponses.AddRange(results);
-            await _context.SaveChangesAsync(ct);
-
-
             return results.ToList();
         }
 
@@ -70,9 +66,6 @@ namespace AI_stats_measurement.Services
             }
 
             var results = await Task.WhenAll(tasks);
-
-            _context.ModelResponses.AddRange(results);
-            await _context.SaveChangesAsync(ct);
 
             return results.ToList();
         }

@@ -4,6 +4,7 @@ using AI_stats_measurement.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace AI_stats_measurement.Backend.Migrations
 {
     [DbContext(typeof(AIMeasureDbContext))]
-    partial class AIMeasureDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260312104828_InitialCreate")]
+    partial class InitialCreate
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -37,21 +40,6 @@ namespace AI_stats_measurement.Backend.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<bool>("AnswerIsCorrect")
-                        .HasColumnType("bit");
-
-                    b.Property<decimal>("AverageAnswer")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<decimal>("AverageAnswerCorrectness")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<decimal>("AverageRelativeError")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<decimal>("AverageSourceCorrectness")
-                        .HasColumnType("decimal(18,2)");
-
                     b.Property<DateTime>("CreatedUtc")
                         .HasColumnType("datetime2");
 
@@ -64,6 +52,9 @@ namespace AI_stats_measurement.Backend.Migrations
                     b.Property<string>("ExpectedSource")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsCorrect")
+                        .HasColumnType("bit");
 
                     b.Property<string>("Provider")
                         .IsRequired()
@@ -78,9 +69,6 @@ namespace AI_stats_measurement.Backend.Migrations
 
                     b.Property<decimal>("RelativeError")
                         .HasColumnType("decimal(18,2)");
-
-                    b.Property<bool>("SourceIsCorrect")
-                        .HasColumnType("bit");
 
                     b.Property<decimal>("SquareMeanRootError")
                         .HasColumnType("decimal(18,2)");
@@ -186,29 +174,14 @@ namespace AI_stats_measurement.Backend.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<bool>("AnswerIsCorrect")
+                    b.Property<bool>("IsCorrect")
                         .HasColumnType("bit");
-
-                    b.Property<decimal>("AverageAnswer")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<decimal>("AverageAnswerCorrectness")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<decimal>("AverageRelativeError")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<decimal>("AverageSourceCorrectness")
-                        .HasColumnType("decimal(18,2)");
 
                     b.Property<int>("ParsedModelResponseId")
                         .HasColumnType("int");
 
                     b.Property<decimal>("RelativeError")
                         .HasColumnType("decimal(18,2)");
-
-                    b.Property<bool>("SourceIsCorrect")
-                        .HasColumnType("bit");
 
                     b.Property<decimal>("SquareMeanRootError")
                         .HasColumnType("decimal(18,2)");
