@@ -1,7 +1,9 @@
-﻿using AI_stats_measurement.Data;
+﻿using AI_stats_measurement.Backend.Models;
+using AI_stats_measurement.Data;
 using AI_stats_measurement.Models;
 using Microsoft.Recognizers.Text;
 using Microsoft.Recognizers.Text.Number;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Globalization;
 using System.Security.Policy;
@@ -11,116 +13,403 @@ namespace AI_stats_measurement.Services;
 
 public class ModelResponseParser
 {
-    private static AIMeasureDbContext _context;
-
-    ModelResponseParser(AIMeasureDbContext context)
+    ModelResponseParser()
     {
-        _context = context;
+
     }
 
-    // This regex matches URLs starting with http:// or https:// and continues until a whitespace, closing parenthesis, or closing square bracket is encountered.
+    private static readonly Regex MarkdownLinkRegex =
+    new(@"\[([^\]]+)\]\((https?:\/\/[^\s\)]+)\)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
     private static readonly Regex UrlRegex =
-        new Regex(@"https?://[^\s\)\]]+", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        new(@"https?:\/\/[^\s\)\]]+", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
 
     // Parses the raw text response from the model to extract a numeric answer and sources.
-    public static ParsedModelResponse Parse(int responseId, string? rawText)
+    public static ParsedModelResponse ParseDutch(int responseId, string? rawText)
     {
         if (string.IsNullOrWhiteSpace(rawText))
-            return new ParsedModelResponse(responseId,0 , new List<string>());
+            return new ParsedModelResponse(responseId, 0, new List<ExtractedSource>());
 
         var text = rawText.Trim();
 
-        List<string> sources = ExtractSource(text);
+        var sources = ExtractDutchSources(text);
 
-        // Dutch culture
-        var results = NumberRecognizer.RecognizeNumber(text, Culture.Dutch);
+        var answer = ExtractDutchNumber(text);
 
-        decimal? best = null;
-
-        foreach (var result in results)
-        {
-            // We are only interested in results that have a resolution with a "value" key that can be parsed as a decimal number.
-            if (result.Resolution == null) continue;
-
-            if (!result.Resolution.TryGetValue("value", out var valueObj)) continue;
-
-            var valueText = valueObj?.ToString();
-            if (string.IsNullOrWhiteSpace(valueText)) continue;
-
-            // Try to parse the value as a decimal number using invariant culture to ensure consistent parsing regardless of locale.
-            if (!decimal.TryParse(
-                    valueText,
-                    NumberStyles.Number | NumberStyles.AllowLeadingSign,
-                    CultureInfo.InvariantCulture,
-                    out var value))
-            {
-                continue;
-            }
-
-            // skip likely years
-            if (IsLikelyYear(value))
-                continue;
-
-            best = value;
-            break;
-        }
-
-        var response = new ParsedModelResponse(responseId, best ?? 0, sources);  
+        var response = new ParsedModelResponse(responseId, answer ?? 0, sources);  
 
         return response;     
     }
 
-private static List<string> ExtractSource(string text)
+    // Parses the raw text response from the model to extract a numeric answer and sources.
+    public static ParsedModelResponse ParseEnglish(int responseId, string? rawText)
     {
-        var sources = new List<string>();
+        if (string.IsNullOrWhiteSpace(rawText))
+            return new ParsedModelResponse(responseId, 0, new List<ExtractedSource>());
 
-        foreach (Match match in UrlRegex.Matches(text))
+        var text = rawText.Trim();
+
+        var sources = ExtractEnglishSources(text);
+
+        var answer = ExtractEnglishNumber(text);
+
+        var response = new ParsedModelResponse(responseId, answer ?? 0, sources);
+        return response;
+    }
+
+    private static List<ExtractedSource> ExtractDutchSources(string text)
+    {
+        var sources = new List<ExtractedSource>();
+
+        if (string.IsNullOrWhiteSpace(text))
+            return sources;
+
+        // 1. Markdown: [naam](url)
+        foreach (Match match in MarkdownLinkRegex.Matches(text))
         {
-            var url = match.Value.Trim();
+            var name = match.Groups[1].Value.Trim();
+            var url = match.Groups[2].Value.Trim().TrimEnd('.', ',', ';');
 
-            // Do not add duplicate URLs
-            if (!sources.Contains(url))
-                sources.Add(url);
+            // If the name looks like a url, extract a cleaner name from the url
+            if (name.Contains("https"))
+                name = GetSourceName(name);
+
+            sources.Add(new ExtractedSource
+            {
+                Name = name,
+                Url = url,
+                Type = SourceTypeHelper.GetSourceType(url)
+            });
         }
 
+        // Remove all markdown links from the text
+        text = MarkdownLinkRegex.Replace(text, "");
+
+        // 2. urls
+        foreach (Match match in UrlRegex.Matches(text))
+        {
+            var url = match.Value.Trim().TrimEnd('.', ',', ';');
+
+            // Check if this url was already added via markdown links
+            if (sources.Any(s => string.Equals(s.Url, url, StringComparison.OrdinalIgnoreCase)))
+                continue;
+
+            var name = GetSourceName(url);
+
+            sources.Add(new ExtractedSource
+            {
+                Name = name,
+                Url = url,
+                Type = SourceTypeHelper.GetSourceType(url)
+            });
+        }
+
+        // 3. Sources mentioned in plain text, e.g. "Bron: CBS" or "Source: Rijksoverheid"
         var lines = text.Split('\n', StringSplitOptions.RemoveEmptyEntries);
 
-        foreach (var line in lines)
+        foreach (var rawLine in lines)
         {
-            var trimmed = line.Trim().Replace("**", "");
+            var line = rawLine.Trim().Replace("**", "");
 
-            // Look for lines that contain "bron:" or "source:" (case-insensitive) and extract the text following the colon as a potential source.
-            if (trimmed.Contains("bron:", StringComparison.OrdinalIgnoreCase) ||
-                trimmed.Contains("source:", StringComparison.OrdinalIgnoreCase))
+            var bronIndex = line.IndexOf("bron:", StringComparison.OrdinalIgnoreCase);
+            if (bronIndex < 0)
+                continue;
+
+            var sourceText = line[(bronIndex + "bron:".Length)..].Trim();
+            sourceText = sourceText.TrimEnd('.', ',', ';');
+
+            if (string.IsNullOrWhiteSpace(sourceText))
+                continue;
+
+            // skip if already found from markdown/url
+            if (sources.Any(s => string.Equals(s.Name?.Trim(), sourceText, StringComparison.OrdinalIgnoreCase)))
+                continue;
+
+            sources.Add(new ExtractedSource
             {
-                var idx = trimmed.IndexOf(':');
-
-                // If there is no colon or if the colon is at the end of the line, skip this line as it does not contain a valid source.
-                if (idx < 0 || idx >= trimmed.Length - 1)
-                    continue;
-
-                var source = trimmed[(idx + 1)..].Trim();
-
-                // If the source contains a comma or a dash, take only the part before the comma or dash as the source, as these characters often indicate additional information that is not part of the source name.
-                var commaIndex = source.IndexOf(',');
-                if (commaIndex >= 0) 
-                    source = source[..commaIndex];
-
-                var dashIndex = source.IndexOf('-');
-                if (dashIndex >= 0)
-                    source = source[..dashIndex];
-
-                // remove trailing dots and trim whitespace
-                sources.Add(source.Trim().TrimEnd('.'));
-            }
+                Name = sourceText,
+                Url = null,
+                Type = null
+            });
         }
 
         return sources;
     }
 
-    // This method checks if a given decimal value is likely to be a year, based on a reasonable range of years.
-    private static bool IsLikelyYear(decimal value)
+    private static List<ExtractedSource> ExtractEnglishSources(string text)
     {
-        return value >= 1990 && value <= 2030;
+        var sources = new List<ExtractedSource>();
+
+        if (string.IsNullOrWhiteSpace(text))
+            return sources;
+
+        // 1. Markdown: [naam](url)
+        foreach (Match match in MarkdownLinkRegex.Matches(text))
+        {
+            var name = match.Groups[1].Value.Trim();
+            var url = match.Groups[2].Value.Trim().TrimEnd('.', ',', ';');
+
+            // If the name looks like a url, extract a cleaner name from the url
+            if (name.Contains("https"))
+                name = GetSourceName(name);
+
+            sources.Add(new ExtractedSource
+            {
+                Name = name,
+                Url = url,
+                Type = SourceTypeHelper.GetSourceType(url)
+            });
+        }
+
+        // Remove all markdown links from the text
+        text = MarkdownLinkRegex.Replace(text, "");
+
+        // 2. urls
+        foreach (Match match in UrlRegex.Matches(text))
+        {
+            var url = match.Value.Trim().TrimEnd('.', ',', ';');
+
+            // Check if this url was already added via markdown links
+            if (sources.Any(s => string.Equals(s.Url, url, StringComparison.OrdinalIgnoreCase)))
+                continue;
+
+            var name = GetSourceName(url);
+
+            sources.Add(new ExtractedSource
+            {
+                Name = name,
+                Url = url,
+                Type = SourceTypeHelper.GetSourceType(url)
+            });
+        }
+
+        // 3. Sources mentioned in plain text, e.g. "Bron: CBS" or "Source: Rijksoverheid"
+        var lines = text.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+
+        foreach (var rawLine in lines)
+        {
+            var line = rawLine.Trim().Replace("**", "");
+
+            var bronIndex = line.IndexOf("source:", StringComparison.OrdinalIgnoreCase);
+            if (bronIndex < 0)
+                continue;
+
+            var sourceText = line[(bronIndex + "source:".Length)..].Trim();
+            sourceText = sourceText.TrimEnd('.', ',', ';');
+
+            if (string.IsNullOrWhiteSpace(sourceText))
+                continue;
+
+            // skip if already found from markdown/url
+            if (sources.Any(s => string.Equals(s.Name?.Trim(), sourceText, StringComparison.OrdinalIgnoreCase)))
+                continue;
+
+            sources.Add(new ExtractedSource
+            {
+                Name = sourceText,
+                Url = null,
+                Type = null
+            });
+        }
+
+        return sources;
+    }
+
+    // Extract numbers in Dutch format.
+    private static decimal? ExtractDutchNumber(string text)
+    {
+        text = CleanText(text);
+
+        var matches = Regex.Matches(
+            text,
+            @"(\d{1,3}(?:[.\s]\d{3})*(?:,\d+)?)\s*(miljoen|duizend|miljard)?",
+            RegexOptions.IgnoreCase);
+
+        decimal? best = null;
+
+        foreach (Match match in matches)
+        {
+            var numberText = match.Groups[1].Value;
+
+            // normalize Dutch format
+            numberText = numberText.Replace(".", "").Replace(",", ".");
+
+            if (!decimal.TryParse(numberText, NumberStyles.Number,
+                CultureInfo.InvariantCulture, out var value))
+                continue;
+
+            var magnitude = match.Groups[2].Value.ToLowerInvariant();
+
+            switch (magnitude)
+            {
+                case "duizend":
+                    value *= 1_000m;
+                    break;
+                case "ton":
+                    value *= 1_000m;
+                    break;
+                case "miljoen":
+                    value *= 1_000_000m;
+                    break;
+                case "miljard":
+                    value *= 1_000_000_000m;
+                    break;
+            }
+
+            if (best == null || value > best)
+                best = value;
+        }
+
+        return best;
+    }
+
+    // Extract numbers in English format using Microsoft Recognizers Text library.
+    private static decimal? ExtractEnglishNumber(string text)
+    {
+        text = CleanText(text);
+
+        var results = NumberRecognizer.RecognizeNumber(text, Culture.English);
+
+        decimal? best = null;
+
+        foreach (var result in results)
+        {
+            if (result.Resolution == null)
+                continue;
+
+            if (!result.Resolution.TryGetValue("value", out var valueObj))
+                continue;
+
+            var valueText = valueObj?.ToString();
+            if (string.IsNullOrWhiteSpace(valueText))
+                continue;
+
+            if (!decimal.TryParse(valueText, NumberStyles.Number, CultureInfo.InvariantCulture, out var value))
+                continue;
+
+            if (best == null || value > best)
+                best = value;
+        }
+
+        return best;
+    }
+
+
+    private static string CleanText(string text)
+    {
+        text = Regex.Replace(text, @"https?:\/\/\S+", ""); // remove urls
+        text = Regex.Replace(text, @"\*\*", "");           // markdown bold
+        text = Regex.Replace(text, @"\bin\s+(19|20)\d{2}\b", "", RegexOptions.IgnoreCase); // remove years "in 2021"
+        text = Regex.Replace(text, @"\b(19|20)\d{2}-\w+", "", RegexOptions.IgnoreCase); // remove patterns like "2020/2021"
+        text = Regex.Replace(text, @"\b(19|20)\d{2}\b", ""); // remove "2021-cijfers"
+        text = Regex.Replace(text, @"^\d{4}\s*/\s*\d{4}$", ""); // remove standalone year ranges like "1990/2000"
+
+        return text;
+    }
+
+    private static string GetSourceName(string url)
+    {
+        if (!Uri.TryCreate(url, UriKind.Absolute, out var uri))
+            return url;
+
+        var parts = uri.Host.Split('.');
+
+        if (parts.Length == 0)
+            return uri.Host;
+
+        if (parts[0] == "www" && parts.Length > 1)
+            return parts[1];
+
+        return parts[0];
+    }
+
+    public static class SourceTypeHelper
+    {
+        public static string GetSourceType(string? url)
+        {
+            if (string.IsNullOrWhiteSpace(url))
+                return null;
+
+            url = url.Trim();
+
+            if (!Uri.TryCreate(url, UriKind.Absolute, out var uri))
+                return null;
+
+            var host = uri.Host.ToLowerInvariant();
+            var path = uri.AbsolutePath.ToLowerInvariant();
+            var fullUrl = url.ToLowerInvariant();
+
+            // CBS / NSI database
+            if (host.Contains("opendata.cbs.nl") ||
+                host.Contains("ec.europa.eu") ||
+                host.Contains("stats.oecd.org") ||
+                host.Contains("data-explorer.oecd.org")
+                )
+                return "NSI database";
+
+            // CBS / NSI webartikel
+            if (host.EndsWith("cbs.nl") || host.EndsWith("longreads.cbs.nl"))
+            {
+                // check for typical news/article paths
+                if (path.Contains("/nieuws/") ||
+                    path.Contains("/news/") ||
+                    path.Contains("/cijfers/detail/") ||
+                    path.Contains("/visualisaties/") ||
+                    path.Contains("/figures/") 
+                    )
+                {
+                    return "NSI website";
+                }
+
+                return "NSI not specific";
+            }
+
+            // OECD
+            if (host.EndsWith("oecd.org"))
+            {
+                // check for typical news/article paths
+                if (path.Contains("/publications/") ||
+                    path.Contains("/topics/")
+                    )
+                {
+                    return "NSI website";
+                }
+
+                return "NSI not specific";
+            }
+
+            // StatBank Denmark
+            if (host.EndsWith("oecd.org"))
+                {
+                    // check for typical news/article paths
+                    if (path.Contains("/nieuws/") ||
+                        path.Contains("/news/") ||
+                        path.Contains("/cijfers/detail/") ||
+                        path.Contains("/visualisaties/")
+                        )
+                    {
+                        return "NSI website";
+                    }
+
+                    return "NSI not specific";
+                }
+
+            // INsee / NSI webartikel
+            if (host.EndsWith("insee.fr"))
+            {
+                // check for typical news/article paths
+                if (path.Contains("/statistiques/") 
+                    )
+                {
+                    return "NSI website";
+                }
+
+                return "NSI not specific";
+            }
+
+            // Rijksoverheid / Eurostat / Worldbank / etc. webartikel
+            return "External publication";
+        }
     }
 }

@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace AI_stats_measurement.Backend.Migrations
 {
     [DbContext(typeof(AIMeasureDbContext))]
-    [Migration("20260312141833_InitialCreate1")]
-    partial class InitialCreate1
+    [Migration("20260319135710_InitialCreate3")]
+    partial class InitialCreate3
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -25,7 +25,7 @@ namespace AI_stats_measurement.Backend.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
-            modelBuilder.Entity("AI_stats_measurement.Backend.Models.AI_stats_measurement.Backend.Models.ExportRow", b =>
+            modelBuilder.Entity("AI_stats_measurement.Backend.Models.ExportRow", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -42,18 +42,6 @@ namespace AI_stats_measurement.Backend.Migrations
 
                     b.Property<bool>("AnswerIsCorrect")
                         .HasColumnType("bit");
-
-                    b.Property<decimal>("AverageAnswer")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<decimal>("AverageAnswerCorrectness")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<decimal>("AverageRelativeError")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<decimal>("AverageSourceCorrectness")
-                        .HasColumnType("decimal(18,2)");
 
                     b.Property<DateTime>("CreatedUtc")
                         .HasColumnType("datetime2");
@@ -97,6 +85,21 @@ namespace AI_stats_measurement.Backend.Migrations
                     b.ToTable("ExportRows");
                 });
 
+            modelBuilder.Entity("AI_stats_measurement.Backend.Models.ParsedModelResponseSource", b =>
+                {
+                    b.Property<int>("ParsedModelResponseId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("SourceId")
+                        .HasColumnType("int");
+
+                    b.HasKey("ParsedModelResponseId", "SourceId");
+
+                    b.HasIndex("SourceId");
+
+                    b.ToTable("ParsedModelResponseSources");
+                });
+
             modelBuilder.Entity("AI_stats_measurement.Backend.Models.PromptDimension", b =>
                 {
                     b.Property<int>("Id")
@@ -122,6 +125,32 @@ namespace AI_stats_measurement.Backend.Migrations
                         .IsUnique();
 
                     b.ToTable("PromptDimensions");
+                });
+
+            modelBuilder.Entity("AI_stats_measurement.Backend.Models.Source", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Name")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("Type")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Url")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Name", "Url")
+                        .IsUnique()
+                        .HasFilter("[Name] IS NOT NULL AND [Url] IS NOT NULL");
+
+                    b.ToTable("Sources");
                 });
 
             modelBuilder.Entity("AI_stats_measurement.Models.ModelResponse", b =>
@@ -169,10 +198,6 @@ namespace AI_stats_measurement.Backend.Migrations
                     b.Property<int>("ModelResponseId")
                         .HasColumnType("int");
 
-                    b.PrimitiveCollection<string>("Sources")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
                     b.HasKey("Id");
 
                     b.HasIndex("ModelResponseId")
@@ -189,20 +214,11 @@ namespace AI_stats_measurement.Backend.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<decimal>("AbsoluteError")
+                        .HasColumnType("decimal(18,2)");
+
                     b.Property<bool>("AnswerIsCorrect")
                         .HasColumnType("bit");
-
-                    b.Property<decimal>("AverageAnswer")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<decimal>("AverageAnswerCorrectness")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<decimal>("AverageRelativeError")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<decimal>("AverageSourceCorrectness")
-                        .HasColumnType("decimal(18,2)");
 
                     b.Property<int>("ParsedModelResponseId")
                         .HasColumnType("int");
@@ -212,9 +228,6 @@ namespace AI_stats_measurement.Backend.Migrations
 
                     b.Property<bool>("SourceIsCorrect")
                         .HasColumnType("bit");
-
-                    b.Property<decimal>("SquareMeanRootError")
-                        .HasColumnType("decimal(18,2)");
 
                     b.HasKey("Id");
 
@@ -249,13 +262,16 @@ namespace AI_stats_measurement.Backend.Migrations
                     b.Property<DateTime>("Periode")
                         .HasColumnType("datetime2");
 
+                    b.Property<string>("Provider")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("Question")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("Source")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<int>("SourceId")
+                        .HasColumnType("int");
 
                     b.Property<string>("Subject")
                         .IsRequired()
@@ -267,7 +283,28 @@ namespace AI_stats_measurement.Backend.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("SourceId");
+
                     b.ToTable("Prompts");
+                });
+
+            modelBuilder.Entity("AI_stats_measurement.Backend.Models.ParsedModelResponseSource", b =>
+                {
+                    b.HasOne("AI_stats_measurement.Models.ParsedModelResponse", "ParsedModelResponse")
+                        .WithMany("ParsedModelResponseSources")
+                        .HasForeignKey("ParsedModelResponseId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("AI_stats_measurement.Backend.Models.Source", "Source")
+                        .WithMany("ParsedModelResponseSources")
+                        .HasForeignKey("SourceId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("ParsedModelResponse");
+
+                    b.Navigation("Source");
                 });
 
             modelBuilder.Entity("AI_stats_measurement.Backend.Models.PromptDimension", b =>
@@ -314,6 +351,24 @@ namespace AI_stats_measurement.Backend.Migrations
                     b.Navigation("ParsedModelResponse");
                 });
 
+            modelBuilder.Entity("Prompt", b =>
+                {
+                    b.HasOne("AI_stats_measurement.Backend.Models.Source", "Source")
+                        .WithMany("Prompts")
+                        .HasForeignKey("SourceId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Source");
+                });
+
+            modelBuilder.Entity("AI_stats_measurement.Backend.Models.Source", b =>
+                {
+                    b.Navigation("ParsedModelResponseSources");
+
+                    b.Navigation("Prompts");
+                });
+
             modelBuilder.Entity("AI_stats_measurement.Models.ModelResponse", b =>
                 {
                     b.Navigation("ParsedResponse");
@@ -322,6 +377,8 @@ namespace AI_stats_measurement.Backend.Migrations
             modelBuilder.Entity("AI_stats_measurement.Models.ParsedModelResponse", b =>
                 {
                     b.Navigation("FactCheckResult");
+
+                    b.Navigation("ParsedModelResponseSources");
                 });
 
             modelBuilder.Entity("Prompt", b =>

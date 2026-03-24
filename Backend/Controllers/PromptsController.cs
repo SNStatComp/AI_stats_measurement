@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using AI_stats_measurement.Data;
 using AI_stats_measurement.Backend.Dto;
+using AI_stats_measurement.Backend.Models;
 
 namespace AI_stats_measurement.Backend.Controllers
 {
@@ -74,7 +75,7 @@ namespace AI_stats_measurement.Backend.Controllers
 
         // POST: api/Prompts
         [HttpPost]
-        public async Task<ActionResult<IEnumerable<int>>> PostPrompts([FromBody] List<PromptDto>dtos)
+        public async Task<ActionResult<IEnumerable<int>>> PostPrompts([FromBody] List<PromptDto> dtos)
         {
             if (dtos == null || dtos.Count == 0)
                 return BadRequest("No prompts provided.");
@@ -83,14 +84,35 @@ namespace AI_stats_measurement.Backend.Controllers
 
             foreach (var dto in dtos)
             {
+                var sourceName = string.IsNullOrWhiteSpace(dto.SourceName) ? null : dto.SourceName.Trim();
+                var sourceType = string.IsNullOrWhiteSpace(dto.SourceType) ? null : dto.SourceType.Trim();
+                var sourceUrl = string.IsNullOrWhiteSpace(dto.SourceUrl) ? null : dto.SourceUrl.Trim().TrimEnd('/');
+
+                var source = await _context.Sources.FirstOrDefaultAsync(s =>
+                    s.Name == sourceName &&
+                    s.Url == sourceUrl);
+
+                if (source == null)
+                {
+                    source = new Source
+                    {
+                        Name = sourceName,
+                        Type = sourceType,
+                        Url = sourceUrl
+                    };
+
+                    _context.Sources.Add(source);
+                }
+
                 var prompt = new Prompt(
+                    dto.Provider,
                     dto.Instruction,
                     dto.Theme,
                     dto.Periode,
                     dto.Subject,
                     dto.Question,
                     dto.Answer,
-                    dto.Source,
+                    source,
                     dto.AnswerLocation
                 );
 

@@ -22,18 +22,33 @@ namespace AI_stats_measurement.Backend.Migrations
                     ExpectedAnswer = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
                     ExpectedSource = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     ActualAnswer = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
-                    ActualSource = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     Provider = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     RawText = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     Exception = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     SquareMeanRootError = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
                     RelativeError = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
-                    IsCorrect = table.Column<bool>(type: "bit", nullable: false),
+                    AnswerIsCorrect = table.Column<bool>(type: "bit", nullable: false),
+                    SourceIsCorrect = table.Column<bool>(type: "bit", nullable: false),
                     CreatedUtc = table.Column<DateTime>(type: "datetime2", nullable: false)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_ExportRows", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Sources",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    Name = table.Column<string>(type: "nvarchar(450)", nullable: true),
+                    Url = table.Column<string>(type: "nvarchar(450)", nullable: true),
+                    Type = table.Column<string>(type: "nvarchar(max)", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Sources", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
@@ -48,13 +63,19 @@ namespace AI_stats_measurement.Backend.Migrations
                     Subject = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     Question = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     Answer = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
-                    Source = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    SourceId = table.Column<int>(type: "int", nullable: false),
                     AnswerLocation = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     CreatedUtc = table.Column<DateTime>(type: "datetime2", nullable: false)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Prompts", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Prompts_Sources_SourceId",
+                        column: x => x.SourceId,
+                        principalTable: "Sources",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -108,8 +129,7 @@ namespace AI_stats_measurement.Backend.Migrations
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
                     ModelResponseId = table.Column<int>(type: "int", nullable: false),
-                    Answer = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
-                    Sources = table.Column<string>(type: "nvarchar(max)", nullable: false)
+                    Answer = table.Column<decimal>(type: "decimal(18,2)", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -131,7 +151,8 @@ namespace AI_stats_measurement.Backend.Migrations
                     ParsedModelResponseId = table.Column<int>(type: "int", nullable: false),
                     SquareMeanRootError = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
                     RelativeError = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
-                    IsCorrect = table.Column<bool>(type: "bit", nullable: false)
+                    AnswerIsCorrect = table.Column<bool>(type: "bit", nullable: false),
+                    SourceIsCorrect = table.Column<bool>(type: "bit", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -142,6 +163,36 @@ namespace AI_stats_measurement.Backend.Migrations
                         principalTable: "ParsedModelResponses",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "ParsedModelResponseSources",
+                columns: table => new
+                {
+                    ParsedModelResponseId = table.Column<int>(type: "int", nullable: false),
+                    SourceId = table.Column<int>(type: "int", nullable: false),
+                    ExportRowId = table.Column<int>(type: "int", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_ParsedModelResponseSources", x => new { x.ParsedModelResponseId, x.SourceId });
+                    table.ForeignKey(
+                        name: "FK_ParsedModelResponseSources_ExportRows_ExportRowId",
+                        column: x => x.ExportRowId,
+                        principalTable: "ExportRows",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_ParsedModelResponseSources_ParsedModelResponses_ParsedModelResponseId",
+                        column: x => x.ParsedModelResponseId,
+                        principalTable: "ParsedModelResponses",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_ParsedModelResponseSources_Sources_SourceId",
+                        column: x => x.SourceId,
+                        principalTable: "Sources",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateIndex(
@@ -162,23 +213,48 @@ namespace AI_stats_measurement.Backend.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
+                name: "IX_ParsedModelResponseSources_ExportRowId",
+                table: "ParsedModelResponseSources",
+                column: "ExportRowId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ParsedModelResponseSources_SourceId",
+                table: "ParsedModelResponseSources",
+                column: "SourceId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_PromptDimensions_PromptId_Name",
                 table: "PromptDimensions",
                 columns: new[] { "PromptId", "Name" },
                 unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Prompts_SourceId",
+                table: "Prompts",
+                column: "SourceId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Sources_Name_Url",
+                table: "Sources",
+                columns: new[] { "Name", "Url" },
+                unique: true,
+                filter: "[Name] IS NOT NULL AND [Url] IS NOT NULL");
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
-                name: "ExportRows");
-
-            migrationBuilder.DropTable(
                 name: "FactCheckResults");
 
             migrationBuilder.DropTable(
+                name: "ParsedModelResponseSources");
+
+            migrationBuilder.DropTable(
                 name: "PromptDimensions");
+
+            migrationBuilder.DropTable(
+                name: "ExportRows");
 
             migrationBuilder.DropTable(
                 name: "ParsedModelResponses");
@@ -188,6 +264,9 @@ namespace AI_stats_measurement.Backend.Migrations
 
             migrationBuilder.DropTable(
                 name: "Prompts");
+
+            migrationBuilder.DropTable(
+                name: "Sources");
         }
     }
 }
