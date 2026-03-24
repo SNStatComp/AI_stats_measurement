@@ -1,14 +1,16 @@
 ﻿using AI_stats_measurement.Backend.Models;
-using AI_stats_measurement.Backend.Models.AI_stats_measurement.Backend.Models;
 using AI_stats_measurement.Data;
+using AI_stats_measurement.Models;
 using AI_stats_measurement.Services;
 using Azure;
 using Elfie.Serialization;
 using Google.GenAI.Types;
+using Humanizer;
 using Microsoft.DotNet.Scaffolding.Shared;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Identity.Client;
 using System;
+using System.Text.RegularExpressions;
 
 namespace AI_stats_measurement.Backend.Services
 {
@@ -16,19 +18,24 @@ namespace AI_stats_measurement.Backend.Services
     {
         private readonly LlmAggregator _llmAggregator;
         private readonly FactChecker _checker;
+        private readonly SourceNormalizer _sourceNormalizer;
         private readonly AIMeasureDbContext _context;
+        private readonly AnalyticsService _analyticsService;
 
-        public EvaluationPipeline(LlmAggregator llmAggregator, FactChecker checker, AIMeasureDbContext context)
+        public EvaluationPipeline(LlmAggregator llmAggregator, FactChecker checker,  AIMeasureDbContext context, SourceNormalizer sourceNormalizer, AnalyticsService analyticsService)
         {
             _llmAggregator = llmAggregator;
             _checker = checker;
             _context = context;
+            _sourceNormalizer = sourceNormalizer;
+            _analyticsService = analyticsService;
         }
 
         public async Task<List<ExportRow>> RunAsync(List<int> promptIds, CancellationToken ct)
         {
             // Step 1: Retrieve prompts from the database
             var prompts = await _context.Prompts
+                .Include(s => s.Source)
                 .Where(p => promptIds.Contains(p.Id))
                 .ToListAsync(ct);
 
@@ -49,47 +56,52 @@ namespace AI_stats_measurement.Backend.Services
                     continue;
                 }
 
+                ParsedModelResponse parsed = new ParsedModelResponse(0, 0, []);
+
                 // Step 3: Parse the model response
-                var parsed = ModelResponseParser.Parse(response.Id, response.RawText);
+                if (response.Prompt.Provider == "CBS")
+                {
+                    parsed = ModelResponseParser.ParseDutch(response.Id, response.RawText);
+                }
+                else if (response.Prompt.Provider == "OECD")
+                {
+                    parsed = ModelResponseParser.ParseEnglish(response.Id, response.RawText);
+                }
+                else if (response.Prompt.Provider == "StatBank Denmark")
+                {
+                    parsed = ModelResponseParser.ParseEnglish(response.Id, response.RawText);
+                }
+
+                await _sourceNormalizer.AttachNormalizedSourcesAsync(parsed, ct);
 
                 _context.ParsedModelResponses.Add(parsed);
                 await _context.SaveChangesAsync(ct);
 
-                // Retrieve the last 3 parsed responses for the same prompt to use as context for cosistency
-                var previousParsed = _context.ParsedModelResponses
-                .Include(r => r.ModelResponse)
-                .Where(r => r.ModelResponse.PromptId == parsed.ModelResponse.PromptId
-                && r.ModelResponse.Provider == parsed.ModelResponse.Provider
-                )
-                .OrderByDescending(r => r.Id)
-                .Take(3)
-                .ToList();
-
                 // Step 4: Fact-check the parsed response
-                var fact = _checker.Check(previousParsed, parsed, prompt.Answer, prompt.Source);
+                var fact = _checker.Check(parsed, prompt.Answer, prompt.Provider);
 
                 _context.FactCheckResults.Add(fact);
                 await _context.SaveChangesAsync(ct);
+               
+                var actualSources = parsed.ParsedModelResponseSources
+                    .Select(p => p.SourceId)
+                    .ToList();
 
                 // Step 5: Create export rows
                 rows.Add(new ExportRow(
                     theme: prompt.Theme,
                     question: prompt.Question,
                     expectedAnswer: prompt.Answer,
-                    expectedSource: prompt.Source,
+                    expectedSource: prompt.Source.Url,
                     actualAnswer: parsed.Answer,
-                    actualSource: parsed.Sources,
+                    actualSource: actualSources,
                     provider: response.Provider,
                     rawText: response.RawText,
                     exception: response.Exception,
-                    squareMeanRootError: fact.SquareMeanRootError,
+                    squareMeanRootError: 0,
                     relativeError: fact.RelativeError,
                     answerIsCorrect: fact.AnswerIsCorrect,
                     sourceIsCorrect: fact.SourceIsCorrect,
-                    averageRelativeError: fact.AverageRelativeError,
-                    averageAnswer: fact.AverageAnswer,
-                    averageAnswerCorrectness: fact.AverageAnswerCorrectness,
-                    averageSourceCorrectness: fact.AverageSourceCorrectness,
                     createdUtc: response.CreatedUtc
                 ));
             }
@@ -98,6 +110,8 @@ namespace AI_stats_measurement.Backend.Services
             await _context.SaveChangesAsync(ct);
 
             return rows;
-        }             
+        }
+
+        
     }
 }

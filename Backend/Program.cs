@@ -1,3 +1,4 @@
+using AI_stats_measurement.Backend.Clients;
 using AI_stats_measurement.Backend.Services;
 using AI_stats_measurement.Clients;
 using AI_stats_measurement.Data;
@@ -26,14 +27,21 @@ builder.Services.AddCors(options =>
 builder.Services.AddControllers();
 
 builder.Services.AddScoped<ILlmQuerier, ChatGPTQuerier>();
+//builder.Services.AddScoped<ILlmQuerier, ChatGPTWebSearchQuerier>();
 builder.Services.AddScoped<ILlmQuerier, GeminiQuerier>();
+//builder.Services.AddScoped<ILlmQuerier, GeminiWebSearchQuerier>();
 builder.Services.AddScoped<ILlmQuerier, GrokQuerier>();
+//builder.Services.AddScoped<ILlmQuerier, GrokWebSearchQuerier>();
 
 builder.Services.AddScoped<LlmAggregator>();
 
 builder.Services.AddScoped<FactChecker>(sp =>
     new FactChecker(0.05m, "CBS")
 );
+
+builder.Services.AddScoped<AnalyticsService>();
+
+builder.Services.AddScoped<SourceNormalizer>();
 
 builder.Services.AddScoped<EvaluationPipeline>();
 

@@ -4,6 +4,7 @@ using AI_stats_measurement.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace AI_stats_measurement.Backend.Migrations
 {
     [DbContext(typeof(AIMeasureDbContext))]
-    partial class AIMeasureDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260319103433_InitialCreate2")]
+    partial class InitialCreate2
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -22,7 +25,7 @@ namespace AI_stats_measurement.Backend.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
-            modelBuilder.Entity("AI_stats_measurement.Backend.Models.ExportRow", b =>
+            modelBuilder.Entity("AI_stats_measurement.Backend.Models.AI_stats_measurement.Backend.Models.ExportRow", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -139,8 +142,7 @@ namespace AI_stats_measurement.Backend.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Url")
-                        .HasMaxLength(2048)
-                        .HasColumnType("nvarchar(2048)");
+                        .HasColumnType("nvarchar(450)");
 
                     b.HasKey("Id");
 

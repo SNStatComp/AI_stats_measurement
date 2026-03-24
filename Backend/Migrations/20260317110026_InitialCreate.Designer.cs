@@ -4,6 +4,7 @@ using AI_stats_measurement.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace AI_stats_measurement.Backend.Migrations
 {
     [DbContext(typeof(AIMeasureDbContext))]
-    partial class AIMeasureDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260317110026_InitialCreate")]
+    partial class InitialCreate
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -22,7 +25,7 @@ namespace AI_stats_measurement.Backend.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
-            modelBuilder.Entity("AI_stats_measurement.Backend.Models.ExportRow", b =>
+            modelBuilder.Entity("AI_stats_measurement.Backend.Models.AI_stats_measurement.Backend.Models.ExportRow", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -32,10 +35,6 @@ namespace AI_stats_measurement.Backend.Migrations
 
                     b.Property<decimal>("ActualAnswer")
                         .HasColumnType("decimal(18,2)");
-
-                    b.PrimitiveCollection<string>("ActualSource")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
 
                     b.Property<bool>("AnswerIsCorrect")
                         .HasColumnType("bit");
@@ -90,7 +89,12 @@ namespace AI_stats_measurement.Backend.Migrations
                     b.Property<int>("SourceId")
                         .HasColumnType("int");
 
+                    b.Property<int?>("ExportRowId")
+                        .HasColumnType("int");
+
                     b.HasKey("ParsedModelResponseId", "SourceId");
+
+                    b.HasIndex("ExportRowId");
 
                     b.HasIndex("SourceId");
 
@@ -139,8 +143,7 @@ namespace AI_stats_measurement.Backend.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Url")
-                        .HasMaxLength(2048)
-                        .HasColumnType("nvarchar(2048)");
+                        .HasColumnType("nvarchar(450)");
 
                     b.HasKey("Id");
 
@@ -212,9 +215,6 @@ namespace AI_stats_measurement.Backend.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<decimal>("AbsoluteError")
-                        .HasColumnType("decimal(18,2)");
-
                     b.Property<bool>("AnswerIsCorrect")
                         .HasColumnType("bit");
 
@@ -226,6 +226,9 @@ namespace AI_stats_measurement.Backend.Migrations
 
                     b.Property<bool>("SourceIsCorrect")
                         .HasColumnType("bit");
+
+                    b.Property<decimal>("SquareMeanRootError")
+                        .HasColumnType("decimal(18,2)");
 
                     b.HasKey("Id");
 
@@ -260,10 +263,6 @@ namespace AI_stats_measurement.Backend.Migrations
                     b.Property<DateTime>("Periode")
                         .HasColumnType("datetime2");
 
-                    b.Property<string>("Provider")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<string>("Question")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -288,6 +287,10 @@ namespace AI_stats_measurement.Backend.Migrations
 
             modelBuilder.Entity("AI_stats_measurement.Backend.Models.ParsedModelResponseSource", b =>
                 {
+                    b.HasOne("AI_stats_measurement.Backend.Models.AI_stats_measurement.Backend.Models.ExportRow", null)
+                        .WithMany("ActualSource")
+                        .HasForeignKey("ExportRowId");
+
                     b.HasOne("AI_stats_measurement.Models.ParsedModelResponse", "ParsedModelResponse")
                         .WithMany("ParsedModelResponseSources")
                         .HasForeignKey("ParsedModelResponseId")
@@ -358,6 +361,11 @@ namespace AI_stats_measurement.Backend.Migrations
                         .IsRequired();
 
                     b.Navigation("Source");
+                });
+
+            modelBuilder.Entity("AI_stats_measurement.Backend.Models.AI_stats_measurement.Backend.Models.ExportRow", b =>
+                {
+                    b.Navigation("ActualSource");
                 });
 
             modelBuilder.Entity("AI_stats_measurement.Backend.Models.Source", b =>
