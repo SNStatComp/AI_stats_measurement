@@ -27,12 +27,19 @@ namespace AI_stats_measurement.Services
             bool answerIsCorrect = relativeError <= RelativeTolerance;
             bool sourceIsCorrect = ComputeSourceCorrectness(expectedSource, parsed.ExtractedSources);
 
+            bool abstained = false;
+            if (actualAnswer == 0)
+            {
+                abstained = true;
+            }
+
             return new FactCheckResult(
                 parsed.Id,
                 absoluteError,
                 relativeError,
                 answerIsCorrect,
-                sourceIsCorrect
+                sourceIsCorrect,
+                abstained
             );
         }
 
@@ -52,11 +59,8 @@ namespace AI_stats_measurement.Services
             return actualSources.Any(s =>
                 s != null &&
                 (
-                    (!string.IsNullOrWhiteSpace(s.Name) &&
-                     s.Name.Contains(expectedSource, StringComparison.OrdinalIgnoreCase))
-                    ||
-                    (!string.IsNullOrWhiteSpace(s.Url) &&
-                     s.Url.Contains(expectedSource, StringComparison.OrdinalIgnoreCase))
+                    (!string.IsNullOrWhiteSpace(s.Type) &&
+                     s.Type.Contains(expectedSource, StringComparison.OrdinalIgnoreCase))
                 )
             );
         }

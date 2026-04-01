@@ -6,7 +6,8 @@ function Navbar() {
 
   return (
     <nav className="navbar">
-      <h2 className="logo">My App</h2>
+        <div className="navbar-inner">
+      <h2 className="logo">LLM Statistics Monitoring</h2>
 
       <div className="nav-links">
         <Link
@@ -22,6 +23,7 @@ function Navbar() {
         >
           Run Single Prompt
         </Link>
+      </div>
       </div>
     </nav>
   );

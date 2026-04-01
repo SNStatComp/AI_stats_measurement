@@ -9,7 +9,7 @@ namespace AI_stats_measurement.Clients
     {
         private readonly Client _client;
 
-        public string Name => "gemini-2.5-flash-lite-preview-09-2025";
+        public string Name => "gemini-2.5-flash-lite";
 
         public GeminiQuerier(IConfiguration config)
         {
@@ -20,7 +20,7 @@ namespace AI_stats_measurement.Clients
         {
             string systemMessage = prompt.Instruction;
             var response = await _client.Models.GenerateContentAsync(
-                model: "gemini-2.5-flash-lite-preview-09-2025",
+                model: Name,
                 contents: systemMessage + prompt.Question,
                 cancellationToken: ct
             );

@@ -1,0 +1,19 @@
+.results-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  gap: 20px;
+  width: 100%;
+}
+
+.page {
+  min-height: 100vh;
+  background: #f8fafc;
+}
+
+.page-content {
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 24px;
+  box-sizing: border-box;
+}

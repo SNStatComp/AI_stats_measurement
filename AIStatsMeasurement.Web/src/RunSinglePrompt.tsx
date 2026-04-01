@@ -136,8 +136,7 @@ function RunSinglePrompt() {
 
   return (
     <div className="app-container">
-      <h1>LLM Statistics Monitoring Tool</h1>
-
+      <h1>Run Single Prompt</h1>
       <div className="prompt-select">
         <label>
           <strong>Select a Prompt</strong>

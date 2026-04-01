@@ -1,5 +1,6 @@
 ﻿using AI_stats_measurement.Backend.Dto;
 using AI_stats_measurement.Models;
+using System.Collections.Generic;
 
 namespace AI_stats_measurement.Backend.Services
 {
@@ -7,20 +8,46 @@ namespace AI_stats_measurement.Backend.Services
     {
         public AnalyticsService() { }
 
-        public DashboardMetricsDto GetMetrics(
-        List<FactCheckResult> results,
-        string? nsi,
-        string? llm,
-        string? theme)
+        public List<DashboardMetricsByNsiDto> GetMetricsPerNsi(List<FactCheckResult> results, string? nsi, string? llm, string? theme)
         {
-            var filtered = ApplyFilters(results, nsi, llm, theme);
+            var filtered = ApplyFilters(results, null, llm, theme);
 
-            return new DashboardMetricsDto
+            if (!string.IsNullOrWhiteSpace(nsi))
             {
-                AccuracyScore = ComputeAccuracyScore(filtered),
-                ConsistencyScore = ComputeConsistencyScore(filtered),
-                FindabilityScore = ComputeFindabilityScore(filtered),
-                TotalMeasurements = filtered.Count
+                var nsiResults = filtered
+                    .Where(r => r.ParsedModelResponse.ModelResponse.Prompt.Provider == nsi)
+                    .ToList();
+
+                var sources = GetMostCitedSources(nsiResults);
+
+                return new List<DashboardMetricsByNsiDto>
+        {
+            MapToMetricsDto(nsi, nsiResults, sources)
+        };
+            }
+
+            return filtered
+                .GroupBy(r => r.ParsedModelResponse.ModelResponse.Prompt.Provider)
+                .Select(group =>
+                {
+                    var groupResults = group.ToList();
+                    var sources = GetMostCitedSources(groupResults);
+
+                    return MapToMetricsDto(group.Key, groupResults, sources);
+                })
+                .ToList();
+        }
+
+        private DashboardMetricsByNsiDto MapToMetricsDto(string nsi, List<FactCheckResult> results, List<SourceCount> sources)
+        {
+            return new DashboardMetricsByNsiDto
+            {
+                Nsi = nsi,
+                AccuracyScore = ComputeAccuracyScore(results),
+                ConsistencyScore = ComputeConsistencyScore(results),
+                FindabilityScore = ComputeFindabilityScore(results),
+                TotalMeasurements = results.Count,
+                TopSources = sources
             };
         }
 
@@ -29,38 +56,62 @@ namespace AI_stats_measurement.Backend.Services
             if (filtered.Count == 0) return 0;
 
             int correctAnswers = filtered.Count(r => r.SourceIsCorrect);
-
             double ratio = (double)correctAnswers / filtered.Count;
 
             return ratio * 10;
         }
 
-        private double ComputeConsistencyScore(List<FactCheckResult> filtered)
+        private double ComputeRelativeMad(List<FactCheckResult> promptResults)
         {
-            if (filtered.Count == 0) return 0;
-
-            var values = filtered
+            var values = promptResults
                 .Select(r => (double)r.ParsedModelResponse.Answer)
+                .OrderBy(v => v)
                 .ToList();
 
-            double mean = values.Average();
+            if (values.Count < 2)
+                return 0;
 
-            if (mean == 0) return 0; // avoid division by zero
+            double median = GetMedian(values);
 
-            double variance = values.Average(v => Math.Pow(v - mean, 2));
-            double stdDev = Math.Sqrt(variance);
+            var deviations = values
+                .Select(v => Math.Abs(v - median))
+                .ToList();
 
-            double relative = stdDev / mean;
+            double mad = deviations.Average(); 
+            double scale = Math.Max(Math.Abs(median), 1.0);
 
-            // Convert to score (inverse relationship)
-            double score = (1 - relative) * 10;
+            return mad / scale;
+        }
 
-            // Clamp between 0 and 10
+        private double GetMedian(List<double> values)
+        {
+            int n = values.Count;
+
+            if (n % 2 == 1)
+                return values[n / 2];
+
+            return (values[n / 2 - 1] + values[n / 2]) / 2.0;
+        }
+
+        private double ComputeConsistencyScore(List<FactCheckResult> results)
+        {
+            // 
+            var perPrompt = results
+                .Where(r => !r.Abstained && r.RelativeError != 1)
+                .GroupBy(r => r.ParsedModelResponse.ModelResponse.Prompt.Id)
+                .Select(g => ComputeRelativeMad(g.ToList()))
+                .ToList();
+
+            if (perPrompt.Count == 0) return 0;
+
+            double avgRelativeMad = perPrompt.Average();
+
+            double score = (1 - avgRelativeMad) * 10;
             return Math.Max(0, Math.Min(10, score));
         }
 
         public double ComputeAccuracyScore(List<FactCheckResult> factCheckResults)
-        {         
+        {
             if (!factCheckResults.Any())
                 return 0.0;
 
@@ -70,11 +121,7 @@ namespace AI_stats_measurement.Backend.Services
             return Math.Round(correctAnswersScore + rmseScore, 2);
         }
 
-        private List<FactCheckResult> ApplyFilters(
-            List<FactCheckResult> factCheckResults,
-            string? filterByNSI,
-            string? filterByLLM,
-            string? filterByTheme)
+        private List<FactCheckResult> ApplyFilters(List<FactCheckResult> factCheckResults, string? filterByNSI, string? filterByLLM, string? filterByTheme)
         {
             return factCheckResults.Where(r =>
                 (string.IsNullOrWhiteSpace(filterByNSI) ||
@@ -88,6 +135,8 @@ namespace AI_stats_measurement.Backend.Services
 
         private double ComputeCorrectAnswerScore(List<FactCheckResult> results)
         {
+            if (results.Count == 0) return 0;
+
             double total = results.Count;
             double correctCount = results.Count(r => r.AnswerIsCorrect);
             return (correctCount / total) * 6.0;
@@ -95,6 +144,8 @@ namespace AI_stats_measurement.Backend.Services
 
         private double ComputeRelativeRmseScore(List<FactCheckResult> results)
         {
+            if (results.Count == 0) return 0;
+
             double rmse = Math.Sqrt(
                 results.Average(r =>
                 {
@@ -108,13 +159,32 @@ namespace AI_stats_measurement.Backend.Services
             double meanExpected = results.Average(r =>
                 (double)r.ParsedModelResponse.ModelResponse.Prompt.Answer);
 
+            if (meanExpected == 0) return 0;
+
             double rrmse = rmse / meanExpected;
 
             if (rrmse <= 0.05) return 4.0;
             if (rrmse <= 0.10) return 3.0;
-            if (rrmse <= 0.20) return 2.0;
-            if (rrmse <= 0.30) return 1.0;
+            if (rrmse <= 0.25) return 2.0;
+            if (rrmse <= 0.50) return 1.0;
             return 0.0;
+        }
+        private List<SourceCount> GetMostCitedSources(List<FactCheckResult> results)
+        {
+            return results
+                .Where(r => r.ParsedModelResponse != null)
+                .SelectMany(r => r.ParsedModelResponse.ParsedModelResponseSources ?? [])
+                .Where(ps => ps.Source != null && !string.IsNullOrWhiteSpace(ps.Source.Url))
+                .Select(ps => new Uri(ps.Source.Url).Host)
+                .GroupBy(host => host)
+                .Select(g => new SourceCount
+                {
+                    Hostname = g.Key,
+                    Count = g.Count()
+                })
+                .OrderByDescending(x => x.Count)
+                .Take(5)
+                .ToList();
         }
     }
 }

@@ -22,13 +22,19 @@ namespace AI_stats_measurement.Backend.Controllers
         }
 
         [HttpPost]
-        public ActionResult GetMetrics([FromBody] MetricsFilterDto filter)
+        public ActionResult<List<DashboardMetricsByNsiDto>> GetMetrics([FromBody] MetricsFilterDto filter)
         {
             var factsQuery = _context.FactCheckResults
                 .Include(f => f.ParsedModelResponse)
-                    .ThenInclude(p => p.ModelResponse)
-                        .ThenInclude(m => m.Prompt)
+                    .ThenInclude(pmr => pmr.ParsedModelResponseSources)
+                        .ThenInclude(pmrs => pmrs.Source)
+                .Include(f => f.ParsedModelResponse)
+                    .ThenInclude(pmr => pmr.ModelResponse)
+                        .ThenInclude(mr => mr.Prompt)
                 .AsQueryable();
+
+            // Filter out records with exceptions in the model response
+            factsQuery = factsQuery.Where(f => f.ParsedModelResponse.ModelResponse.Exception == null);
 
             if (!string.IsNullOrWhiteSpace(filter.Theme))
             {
@@ -50,7 +56,7 @@ namespace AI_stats_measurement.Backend.Controllers
 
             var facts = factsQuery.ToList();
 
-            var metrics = _analyticsService.GetMetrics(
+            var metrics = _analyticsService.GetMetricsPerNsi(
                 facts,
                 filter.Nsi,
                 filter.Llm,
