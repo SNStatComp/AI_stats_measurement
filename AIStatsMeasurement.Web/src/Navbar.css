@@ -1,10 +1,16 @@
 .navbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  background: #1e293b;
-  padding: 12px 24px;
+  width: 100%;
+  background: #16233b;
   color: white;
+}
+
+.navbar-inner {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 32px;
+  padding: 20px 24px;
+  box-sizing: border-box;
 }
 
 .logo {

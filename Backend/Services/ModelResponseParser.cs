@@ -110,6 +110,9 @@ public class ModelResponseParser
 
         foreach (var rawLine in lines)
         {
+            if (sources.Count > 0)
+                break;
+
             var line = rawLine.Trim().Replace("**", "");
 
             var bronIndex = line.IndexOf("bron:", StringComparison.OrdinalIgnoreCase);
@@ -118,6 +121,12 @@ public class ModelResponseParser
 
             var sourceText = line[(bronIndex + "bron:".Length)..].Trim();
             sourceText = sourceText.TrimEnd('.', ',', ';');
+
+            var stop = sourceText.IndexOfAny(new[] { ',', '-', '–', '—', '.' });
+            if (stop > -1)
+            {
+                sourceText = sourceText[..stop];
+            }
 
             if (string.IsNullOrWhiteSpace(sourceText))
                 continue;
@@ -189,6 +198,9 @@ public class ModelResponseParser
 
         foreach (var rawLine in lines)
         {
+            if (sources.Count > 0)
+                break;
+
             var line = rawLine.Trim().Replace("**", "");
 
             var bronIndex = line.IndexOf("source:", StringComparison.OrdinalIgnoreCase);
@@ -197,6 +209,12 @@ public class ModelResponseParser
 
             var sourceText = line[(bronIndex + "source:".Length)..].Trim();
             sourceText = sourceText.TrimEnd('.', ',', ';');
+
+            var stop = sourceText.IndexOfAny(new[] { ',', '-', '–', '—', '.' });
+            if (stop > -1)
+            {
+                sourceText = sourceText[..stop];
+            }
 
             if (string.IsNullOrWhiteSpace(sourceText))
                 continue;
@@ -304,6 +322,7 @@ public class ModelResponseParser
         text = Regex.Replace(text, @"\b(19|20)\d{2}-\w+", "", RegexOptions.IgnoreCase); // remove patterns like "2020/2021"
         text = Regex.Replace(text, @"\b(19|20)\d{2}\b", ""); // remove "2021-cijfers"
         text = Regex.Replace(text, @"^\d{4}\s*/\s*\d{4}$", ""); // remove standalone year ranges like "1990/2000"
+        text = Regex.Replace(text, @"(?is)\n\s*\*{0,2}\s*(bron|source)\s*:\s*.*$", ""); // remove eveting after with "Source:" or "Bron:"
 
         return text;
     }
@@ -340,16 +359,26 @@ public class ModelResponseParser
             var path = uri.AbsolutePath.ToLowerInvariant();
             var fullUrl = url.ToLowerInvariant();
 
-            // CBS / NSI database
-            if (host.Contains("opendata.cbs.nl") ||
-                host.Contains("ec.europa.eu") ||
-                host.Contains("stats.oecd.org") ||
-                host.Contains("data-explorer.oecd.org")
-                )
+            // CBS
+            if (host.Contains("opendata.cbs.nl"))
+                return "NSI database";
+
+            // Eurostat
+            if (host.Contains("ec.europa.eu"))
+                return "NSI database";
+
+            // OECD
+            if (host.Contains("stats.oecd.org") ||
+                host.Contains("data-explorer.oecd.org"))
+                return "NSI database";
+
+            // StatBank Denmark
+            if (host.Contains("statistikbanken.dk") ||
+                host.Contains("statbank.dk"))
                 return "NSI database";
 
             // CBS / NSI webartikel
-            if (host.EndsWith("cbs.nl") || host.EndsWith("longreads.cbs.nl"))
+            if (host.EndsWith("cbs.nl"))
             {
                 // check for typical news/article paths
                 if (path.Contains("/nieuws/") ||
@@ -380,13 +409,11 @@ public class ModelResponseParser
             }
 
             // StatBank Denmark
-            if (host.EndsWith("oecd.org"))
+            if (host.EndsWith("dst.dk"))
                 {
                     // check for typical news/article paths
-                    if (path.Contains("/nieuws/") ||
-                        path.Contains("/news/") ||
-                        path.Contains("/cijfers/detail/") ||
-                        path.Contains("/visualisaties/")
+                    if (path.Contains("/statistik/") ||
+                    path.Contains("/statistics/")
                         )
                     {
                         return "NSI website";

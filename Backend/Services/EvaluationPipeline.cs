@@ -2,15 +2,7 @@
 using AI_stats_measurement.Data;
 using AI_stats_measurement.Models;
 using AI_stats_measurement.Services;
-using Azure;
-using Elfie.Serialization;
-using Google.GenAI.Types;
-using Humanizer;
-using Microsoft.DotNet.Scaffolding.Shared;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Identity.Client;
-using System;
-using System.Text.RegularExpressions;
 
 namespace AI_stats_measurement.Backend.Services
 {
@@ -56,7 +48,8 @@ namespace AI_stats_measurement.Backend.Services
                     continue;
                 }
 
-                ParsedModelResponse parsed = new ParsedModelResponse(0, 0, []);
+                ParsedModelResponse? parsed = null;
+
 
                 // Step 3: Parse the model response
                 if (response.Prompt.Provider == "CBS")
@@ -72,13 +65,20 @@ namespace AI_stats_measurement.Backend.Services
                     parsed = ModelResponseParser.ParseEnglish(response.Id, response.RawText);
                 }
 
+                if (parsed is null)
+                {
+                    // skip
+                    throw new InvalidOperationException(
+                        $"Unsupported NSI: {response.Prompt.Provider}");
+                }
+
                 await _sourceNormalizer.AttachNormalizedSourcesAsync(parsed, ct);
 
                 _context.ParsedModelResponses.Add(parsed);
                 await _context.SaveChangesAsync(ct);
 
                 // Step 4: Fact-check the parsed response
-                var fact = _checker.Check(parsed, prompt.Answer, prompt.Provider);
+                var fact = _checker.Check(parsed, prompt.Answer, "NSI");
 
                 _context.FactCheckResults.Add(fact);
                 await _context.SaveChangesAsync(ct);
@@ -111,7 +111,5 @@ namespace AI_stats_measurement.Backend.Services
 
             return rows;
         }
-
-        
     }
 }

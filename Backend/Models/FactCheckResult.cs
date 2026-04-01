@@ -9,6 +9,7 @@ public class FactCheckResult
     public decimal RelativeError { get; private set; }
     public bool AnswerIsCorrect { get; private set; }
     public bool SourceIsCorrect { get; private set; }
+    public bool Abstained { get; private set; }
     public ParsedModelResponse ParsedModelResponse { get; set; } = null!;
 
     private FactCheckResult() { }
@@ -18,12 +19,14 @@ public class FactCheckResult
     decimal absoluteError,
     decimal relativeError,
     bool answerIsCorrect,
-    bool sourceIsCorrect)
+    bool sourceIsCorrect,
+    bool abstained)
     {
         ParsedModelResponseId = parsedModelResponseId;
         AbsoluteError = absoluteError;
         RelativeError = relativeError;
         AnswerIsCorrect = answerIsCorrect;
         SourceIsCorrect = sourceIsCorrect;
+        Abstained = abstained;
     }
 }
