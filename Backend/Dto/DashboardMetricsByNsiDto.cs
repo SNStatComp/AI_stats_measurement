@@ -7,6 +7,12 @@ public class DashboardMetricsByNsiDto
     public double FindabilityScore { get; set; }
     public int TotalMeasurements { get; set; }
 
+
+    public string ConsistencyScoreTooltip { get; set; } = string.Empty;
+    public string AccuracyScoreTooltip { get; set; } = string.Empty;
+    public string FindabilityScoreTooltip { get; set; } = string.Empty;
+
+
     public List<SourceCount> TopSources { get; set; } = new();
 
 

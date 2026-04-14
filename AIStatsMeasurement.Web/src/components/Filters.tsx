@@ -1,3 +1,5 @@
+import { useEffect, useState } from 'react'
+
 type FiltersProps = {
   selectedNsi: string
   selectedLlm: string
@@ -18,47 +20,6 @@ const llmOptions = [
   'grok-4.20-reasoning'
 ]
 
-const themeOptions = [
-  'Arbeid en sociale zekerheid',
-  'Bedrijven',
-  'Bevolking',
-  'Bouwen en wonen',
-  'Caribisch Nederland',
-  'Energie',
-  'Financiële en zakelijke diensten',
-  'Gezondheid en welzijn',
-  'Handel en horeca',
-  'Industrie',
-  'Inkomen en bestedingen',
-  'Internationale handel',
-  'Landbouw',
-  'Macro-economie',
-  'Natuur en milieu',
-  'Nederland regionaal',
-  'Onderwijs',
-  'Overheid',
-  'Prijzen',
-  'Veiligheid en recht',
-  'Verkeer en vervoer',
-  'Vrije tijd en cultuur',
-  'Agriculture and fisheries',
-  'Development',
-  'Economy',
-  'Education and skills',
-  'Environment and climate change',
-  'Finance and investment',
-  'Public governance',
-  'Health',
-  'Industry, business and entrepreneurship',
-  'Science, technology and innovation',
-  'Employment',
-  'Society',
-  'Regional, rural and urban development',
-  'Trade',
-  'Transport',
-  'Taxation'
-]
-
 export function Filters({
   selectedNsi,
   selectedLlm,
@@ -67,6 +28,15 @@ export function Filters({
   onLlmChange,
   onThemeChange
 }: FiltersProps) {
+  const [themes, setThemes] = useState<string[]>([])
+
+  useEffect(() => {
+    fetch('http://localhost:5201/api/prompts/themes')
+      .then((res) => res.json())
+      .then((data: string[]) => setThemes(data))
+      .catch(() => console.log('Failed loading themes'))
+  }, [])
+
   const cardStyle = {
     background: '#ffffff',
     border: '1px solid #e2e8f0',
@@ -102,7 +72,7 @@ export function Filters({
           onChange={(e) => onNsiChange(e.target.value)}
           style={selectStyle}
         >
-          <option value="">-- Select NSI --</option>
+          <option value="">All NSI's</option>
           {nsiOptions.map((nsi) => (
             <option key={nsi} value={nsi}>
               {nsi}
@@ -121,7 +91,7 @@ export function Filters({
           onChange={(e) => onLlmChange(e.target.value)}
           style={selectStyle}
         >
-          <option value="">-- Select LLM --</option>
+          <option value="">All LLMs</option>
           {llmOptions.map((llm) => (
             <option key={llm} value={llm}>
               {llm}
@@ -140,8 +110,8 @@ export function Filters({
           onChange={(e) => onThemeChange(e.target.value)}
           style={selectStyle}
         >
-          <option value="">-- Select Theme --</option>
-          {themeOptions.map((theme) => (
+          <option value="">All themes</option>
+          {themes.map((theme) => (
             <option key={theme} value={theme}>
               {theme}
             </option>

@@ -29,6 +29,24 @@ namespace AI_stats_measurement.Backend.Controllers
             return await _context.Prompts.ToListAsync();
         }
 
+        [HttpGet("nsi")]
+        public async Task<ActionResult<IEnumerable<int>>> GetPromptsForNSI([FromQuery] string nsi)
+        {
+            return await _context.Prompts
+                .Where(p => p.Provider == nsi)
+                .Select(p => p.Id)
+                .ToListAsync();
+        }
+
+        [HttpGet("themes")]
+        public async Task<ActionResult<IEnumerable<string>>> GetPromptsThemes()
+        {
+            return await _context.Prompts
+                .Select(p => p.Theme)
+                .Distinct()
+                .ToListAsync();
+        }
+
         // GET: api/Prompts/5
         [HttpGet("{id}")]
         public async Task<ActionResult<Prompt>> GetPrompt(int id)

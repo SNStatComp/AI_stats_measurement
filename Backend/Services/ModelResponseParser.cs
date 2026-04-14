@@ -19,11 +19,10 @@ public class ModelResponseParser
     }
 
     private static readonly Regex MarkdownLinkRegex =
-    new(@"\[([^\]]+)\]\((https?:\/\/[^\s\)]+)\)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        new(@"\[([^\]]+)\]\(((https?:\/\/)?([a-z0-9\-]+\.)+[a-z]{2,}[^\s\)]*)\)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
     private static readonly Regex UrlRegex =
-        new(@"https?:\/\/[^\s\)\]]+", RegexOptions.IgnoreCase | RegexOptions.Compiled);
-
+        new(@"(https?:\/\/)?([a-z0-9\-]+\.)+[a-z]{2,}(\/[^\s\)\]]*)?", RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
     // Parses the raw text response from the model to extract a numeric answer and sources.
     public static ParsedModelResponse ParseDutch(int responseId, string? rawText)
@@ -71,6 +70,12 @@ public class ModelResponseParser
             var name = match.Groups[1].Value.Trim();
             var url = match.Groups[2].Value.Trim().TrimEnd('.', ',', ';');
 
+            // Ensure url starts with http
+            if (!url.StartsWith("http", StringComparison.OrdinalIgnoreCase))
+            {
+                url = "https://" + url;
+            }
+
             // If the name looks like a url, extract a cleaner name from the url
             if (name.Contains("https"))
                 name = GetSourceName(name);
@@ -90,6 +95,12 @@ public class ModelResponseParser
         foreach (Match match in UrlRegex.Matches(text))
         {
             var url = match.Value.Trim().TrimEnd('.', ',', ';');
+
+            // Ensure url starts with http
+            if (!url.StartsWith("http", StringComparison.OrdinalIgnoreCase))
+            {
+                url = "https://" + url;
+            }
 
             // Check if this url was already added via markdown links
             if (sources.Any(s => string.Equals(s.Url, url, StringComparison.OrdinalIgnoreCase)))
@@ -159,6 +170,12 @@ public class ModelResponseParser
             var name = match.Groups[1].Value.Trim();
             var url = match.Groups[2].Value.Trim().TrimEnd('.', ',', ';');
 
+            // Ensure url starts with http
+            if (!url.StartsWith("http", StringComparison.OrdinalIgnoreCase))
+            {
+                url = "https://" + url;
+            }
+
             // If the name looks like a url, extract a cleaner name from the url
             if (name.Contains("https"))
                 name = GetSourceName(name);
@@ -178,6 +195,12 @@ public class ModelResponseParser
         foreach (Match match in UrlRegex.Matches(text))
         {
             var url = match.Value.Trim().TrimEnd('.', ',', ';');
+
+            // Ensure url starts with http
+            if (!url.StartsWith("http", StringComparison.OrdinalIgnoreCase))
+            {
+                url = "https://" + url;
+            }
 
             // Check if this url was already added via markdown links
             if (sources.Any(s => string.Equals(s.Url, url, StringComparison.OrdinalIgnoreCase)))
@@ -275,7 +298,8 @@ public class ModelResponseParser
                     break;
             }
 
-            if (best == null || value > best)
+            // if multiple numbers are found, take the first one
+            if (best == null)
                 best = value;
         }
 
@@ -306,7 +330,7 @@ public class ModelResponseParser
             if (!decimal.TryParse(valueText, NumberStyles.Number, CultureInfo.InvariantCulture, out var value))
                 continue;
 
-            if (best == null || value > best)
+            if (best == null)
                 best = value;
         }
 
@@ -323,7 +347,8 @@ public class ModelResponseParser
         text = Regex.Replace(text, @"\b(19|20)\d{2}\b", ""); // remove "2021-cijfers"
         text = Regex.Replace(text, @"^\d{4}\s*/\s*\d{4}$", ""); // remove standalone year ranges like "1990/2000"
         text = Regex.Replace(text, @"(?is)\n\s*\*{0,2}\s*(bron|source)\s*:\s*.*$", ""); // remove eveting after with "Source:" or "Bron:"
-
+        text = Regex.Replace(text, @"\b\d{1,3}\s*[-–]\s*\d{1,3}\s*(jaar|years)?\b", "", RegexOptions.IgnoreCase); // remove patterns like "5-10 jaar"
+        text = Regex.Replace(text, @"\b(19|20)\d{2}\s*=\s*\d+\b", "", RegexOptions.IgnoreCase); // remove patterns like "2021=1000"
         return text;
     }
 
@@ -385,7 +410,8 @@ public class ModelResponseParser
                     path.Contains("/news/") ||
                     path.Contains("/cijfers/detail/") ||
                     path.Contains("/visualisaties/") ||
-                    path.Contains("/figures/") 
+                    path.Contains("/figures/") ||
+                    path.Length != 0
                     )
                 {
                     return "NSI website";
@@ -399,7 +425,8 @@ public class ModelResponseParser
             {
                 // check for typical news/article paths
                 if (path.Contains("/publications/") ||
-                    path.Contains("/topics/")
+                    path.Contains("/topics/") ||
+                    path.Length != 0
                     )
                 {
                     return "NSI website";
@@ -412,13 +439,13 @@ public class ModelResponseParser
             if (host.EndsWith("dst.dk"))
                 {
                     // check for typical news/article paths
-                    if (path.Contains("/statistik/") ||
-                    path.Contains("/statistics/")
-                        )
+                if (path.Contains("/statistik/") ||
+                    path.Contains("/statistics/") ||
+                    path.Length != 0
+                    )
                     {
                         return "NSI website";
                     }
-
                     return "NSI not specific";
                 }
 
