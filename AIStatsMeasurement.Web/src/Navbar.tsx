@@ -23,6 +23,19 @@ function Navbar() {
         >
           Run Single Prompt
         </Link>
+
+        <Link
+          to="/run-multiple"
+          className={location.pathname === "/run-multiple" ? "active" : ""}
+        >
+          Run Multiple Prompts
+        </Link>
+        <Link
+          to="/create-prompt"
+          className={location.pathname === "/create-prompt" ? "active" : ""}
+        >
+          Create Prompt
+        </Link>
       </div>
       </div>
     </nav>

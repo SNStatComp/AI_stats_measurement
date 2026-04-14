@@ -16,23 +16,6 @@ namespace AI_stats_measurement.Services
             _context = context;
         }
 
-        public async Task<List<ModelResponse>> AskAllAsync(List<Prompt> prompts, CancellationToken ct)
-        {
-            var tasks = new List<Task<ModelResponse>>();
-
-            foreach (var querier in _queriers)
-            {
-                foreach (var prompt in prompts)
-                {
-                    tasks.Add(AskSingleAsync(querier, prompt, ct));
-                }
-            }
-
-            var results = await Task.WhenAll(tasks);
-
-            return results.ToList();
-        }
-
         private async Task<ModelResponse> AskSingleAsync(ILlmQuerier q,Prompt prompt, CancellationToken ct)
         {
             try
@@ -46,7 +29,7 @@ namespace AI_stats_measurement.Services
             }
         }
 
-        public async Task<List<ModelResponse>> AskByPromptIdsAsync(List<int> promptIds, CancellationToken ct)
+        public async Task<List<ModelResponse>> AskByPromptIdsAsync(List<int> promptIds, List<string> modelNames, CancellationToken ct)
         {
             var tasks = new List<Task<ModelResponse>>();
 
@@ -59,6 +42,11 @@ namespace AI_stats_measurement.Services
 
             foreach (var querier in _queriers)
             {
+                if (!modelNames.Contains(querier.Name))
+                    {
+                    continue;
+                    }
+                               
                 foreach (var prompt in prompts)
                 {
                     tasks.Add(AskSingleAsync(querier, prompt, ct));

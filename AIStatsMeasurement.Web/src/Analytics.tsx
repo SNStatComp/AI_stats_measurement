@@ -9,7 +9,7 @@ const pageTheme = {
   text: '#0f172a',
   mutedText: '#475569',
   border: '#e2e8f0',
-  primary: '#2563eb',
+  primary: '#0f172a',
   danger: '#dc2626',
   dangerBackground: '#fef2f2'
 }
@@ -26,6 +26,10 @@ export type AnalyticsResponse = {
   consistencyScore: number
   totalMeasurements: number
   topSources: SourceItem[]
+
+  accuracyScoreTooltip: string
+  findabilityScoreTooltip: string
+  consistencyScoreTooltip: string
 }
 
 function Analytics() {

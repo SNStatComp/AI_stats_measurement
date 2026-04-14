@@ -40,25 +40,22 @@ namespace AI_stats_measurement.Backend.Services
 
         private DashboardMetricsByNsiDto MapToMetricsDto(string nsi, List<FactCheckResult> results, List<SourceCount> sources)
         {
+            var accuracy = ComputeAccuracyMetric(results);
+            var consistency = ComputeConsistencyMetric(results);
+            var findability = ComputeFindabilityMetric(results);
+
             return new DashboardMetricsByNsiDto
             {
                 Nsi = nsi,
-                AccuracyScore = ComputeAccuracyScore(results),
-                ConsistencyScore = ComputeConsistencyScore(results),
-                FindabilityScore = ComputeFindabilityScore(results),
+                AccuracyScore = accuracy.Score,
+                ConsistencyScore = consistency.Score,
+                FindabilityScore = findability.Score,
+                AccuracyScoreTooltip = accuracy.Tooltip,
+                ConsistencyScoreTooltip = consistency.Tooltip,
+                FindabilityScoreTooltip = findability.Tooltip,
                 TotalMeasurements = results.Count,
                 TopSources = sources
             };
-        }
-
-        private double ComputeFindabilityScore(List<FactCheckResult> filtered)
-        {
-            if (filtered.Count == 0) return 0;
-
-            int correctAnswers = filtered.Count(r => r.SourceIsCorrect);
-            double ratio = (double)correctAnswers / filtered.Count;
-
-            return ratio * 10;
         }
 
         private double ComputeRelativeMad(List<FactCheckResult> promptResults)
@@ -77,7 +74,7 @@ namespace AI_stats_measurement.Backend.Services
                 .Select(v => Math.Abs(v - median))
                 .ToList();
 
-            double mad = deviations.Average(); 
+            double mad = GetMedian(deviations.OrderBy(d => d).ToList());
             double scale = Math.Max(Math.Abs(median), 1.0);
 
             return mad / scale;
@@ -93,32 +90,148 @@ namespace AI_stats_measurement.Backend.Services
             return (values[n / 2 - 1] + values[n / 2]) / 2.0;
         }
 
-        private double ComputeConsistencyScore(List<FactCheckResult> results)
+        private MetricResultDto ComputeConsistencyMetric(List<FactCheckResult> results)
         {
-            // 
             var perPrompt = results
                 .Where(r => !r.Abstained && r.RelativeError != 1)
                 .GroupBy(r => r.ParsedModelResponse.ModelResponse.Prompt.Id)
                 .Select(g => ComputeRelativeMad(g.ToList()))
                 .ToList();
 
-            if (perPrompt.Count == 0) return 0;
+            if (perPrompt.Count == 0)
+            {
+                return new MetricResultDto
+                {
+                    Score = 0,
+                    Tooltip = "Consistency score: no valid repeated prompt results were available."
+                };
+            }
 
             double avgRelativeMad = perPrompt.Average();
+            double score = 10 - (22.5 * avgRelativeMad);
+            score = Math.Max(0, Math.Min(10, score));
 
-            double score = (1 - avgRelativeMad) * 10;
-            return Math.Max(0, Math.Min(10, score));
+            return new MetricResultDto
+            {
+                Score = Math.Round(score, 2),
+                Tooltip =
+                    $"Measures how consistent the LLM answers are across repeated runs of the same prompt.\n\n" +
+
+                    $"Step 1: For each prompt, the relative MAD (Median Absolute Deviation) is calculated to measure variation between answers.\n" +
+                    $"Step 2: The average relative MAD across all prompts is computed.\n\n" +
+
+                    $"Calculation:\n" +
+                    $"score = 10 - (22.5 × average relative MAD)\n\n" +
+
+                    $"average relative MAD = {avgRelativeMad:F4} (~{avgRelativeMad * 100:F1}% deviation)\n" +
+                    $"final score = {score:F2} (scale: 0–10, where 10 = perfectly consistent)"
+            };
         }
 
-        public double ComputeAccuracyScore(List<FactCheckResult> factCheckResults)
+        private MetricResultDto ComputeAccuracyMetric(List<FactCheckResult> factCheckResults)
         {
             if (!factCheckResults.Any())
-                return 0.0;
+            {
+                return new MetricResultDto
+                {
+                    Score = 0,
+                    Tooltip = "Accuracy score: no results were available."
+                };
+            }
 
-            double correctAnswersScore = ComputeCorrectAnswerScore(factCheckResults);
-            double rmseScore = ComputeRelativeRmseScore(factCheckResults);
+            var perPromptRrmse = factCheckResults
+                .Where(r => !r.Abstained)
+                .GroupBy(r => r.ParsedModelResponse.ModelResponse.Prompt.Id)
+                .Select(g => ComputeRelativeRmsePerPrompt(g.ToList()))
+                .OrderBy(x => x)
+                .ToList();
 
-            return Math.Round(correctAnswersScore + rmseScore, 2);
+            if (perPromptRrmse.Count == 0)
+            {
+                return new MetricResultDto
+                {
+                    Score = 0,
+                    Tooltip = "Accuracy score: no valid prompt results were available."
+                };
+            }
+
+            double medianRelativeRmse = GetMedian(perPromptRrmse);
+
+            double score = 10 - (22.5 * medianRelativeRmse);
+            score = Math.Max(0, Math.Min(10, score));
+
+            return new MetricResultDto
+            {
+                Score = Math.Round(score, 2),
+                Tooltip =
+                    $"Measures how close the model’s answers are to the expected values across repeated runs of the same prompt.\n\n" +
+                    $"Calculation:\n" +
+                    $"Step 1: For each prompt, the relative RMSE is calculated.\n" +
+                    $"RMSE = sqrt(mean((expected - actual)^2))\n" +
+                    $"relative RMSE = RMSE / median(expected)\n" +
+                    $"Step 2: The median of all per-prompt relative RMSE values is used.\n" +
+                    $"Step 3: The final score is calculated as:\n" +
+                    $"score = 10 - (22.5 × median relative RMSE)\n\n" +
+                    $"median relative RMSE = {medianRelativeRmse:F4} (~{medianRelativeRmse * 100:F1}% error)\n" +
+                    $"final score = {score:F2} (scale: 0–10, where 10 = perfect accuracy)"
+            };
+        }
+
+        private double ComputeRelativeRmsePerPrompt(List<FactCheckResult> promptResults)
+        {
+            if (promptResults.Count == 0)
+                return 0;
+
+            double rmse = Math.Sqrt(
+                promptResults.Average(r =>
+                {
+                    double expected = (double)r.ParsedModelResponse.ModelResponse.Prompt.Answer;
+                    double actual = (double)r.ParsedModelResponse.Answer;
+                    double error = expected - actual;
+                    return error * error;
+                })
+            );
+
+            var expectedValues = promptResults
+                .Select(r => (double)r.ParsedModelResponse.ModelResponse.Prompt.Answer)
+                .OrderBy(x => x)
+                .ToList();
+
+            double medianExpected = GetMedian(expectedValues);
+            double scale = Math.Max(Math.Abs(medianExpected), 1.0);
+
+            double rrmse = rmse / scale;
+
+            // Cap the relative RMSE at 1.0 to prevent extreme outliers from skewing the consistency score too much
+            rrmse = Math.Min(rrmse, 1.0);
+
+            return rrmse;
+        }
+
+        private MetricResultDto ComputeFindabilityMetric(List<FactCheckResult> filtered)
+        {
+            if (filtered.Count == 0)
+            {
+                return new MetricResultDto
+                {
+                    Score = 0,
+                    Tooltip = "Findability score: no results were available."
+                };
+            }
+
+            int correctSources = filtered.Count(r => r.SourceIsCorrect);
+            double ratio = (double)correctSources / filtered.Count;
+            double score = ratio * 10;
+
+            return new MetricResultDto
+            {
+                Score = Math.Round(score, 2),
+                Tooltip =
+                    $"This score shows how often the model cited a correct source. " +
+                    $"Calculation: findability score = (correctly cited sources / total results) × 10. " +
+                    $"Correct sources = {correctSources} out of {filtered.Count}. " +
+                    $"Final findability score = {score:F2}."
+            };
         }
 
         private List<FactCheckResult> ApplyFilters(List<FactCheckResult> factCheckResults, string? filterByNSI, string? filterByLLM, string? filterByTheme)
@@ -133,42 +246,6 @@ namespace AI_stats_measurement.Backend.Services
             ).ToList();
         }
 
-        private double ComputeCorrectAnswerScore(List<FactCheckResult> results)
-        {
-            if (results.Count == 0) return 0;
-
-            double total = results.Count;
-            double correctCount = results.Count(r => r.AnswerIsCorrect);
-            return (correctCount / total) * 6.0;
-        }
-
-        private double ComputeRelativeRmseScore(List<FactCheckResult> results)
-        {
-            if (results.Count == 0) return 0;
-
-            double rmse = Math.Sqrt(
-                results.Average(r =>
-                {
-                    double expected = (double)r.ParsedModelResponse.ModelResponse.Prompt.Answer;
-                    double actual = (double)r.ParsedModelResponse.Answer;
-                    double error = expected - actual;
-                    return error * error;
-                })
-            );
-
-            double meanExpected = results.Average(r =>
-                (double)r.ParsedModelResponse.ModelResponse.Prompt.Answer);
-
-            if (meanExpected == 0) return 0;
-
-            double rrmse = rmse / meanExpected;
-
-            if (rrmse <= 0.05) return 4.0;
-            if (rrmse <= 0.10) return 3.0;
-            if (rrmse <= 0.25) return 2.0;
-            if (rrmse <= 0.50) return 1.0;
-            return 0.0;
-        }
         private List<SourceCount> GetMostCitedSources(List<FactCheckResult> results)
         {
             return results
@@ -185,6 +262,14 @@ namespace AI_stats_measurement.Backend.Services
                 .OrderByDescending(x => x.Count)
                 .Take(5)
                 .ToList();
+        }
+
+
+
+        public class MetricResultDto
+        {
+            public double Score { get; set; }
+            public string Tooltip { get; set; } = string.Empty;
         }
     }
 }

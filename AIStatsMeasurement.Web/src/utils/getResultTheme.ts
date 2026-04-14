@@ -3,20 +3,17 @@ export function getResultTheme(name: string) {
 
   if (lowerName.includes('cbs')) {
     return {
-      color: '#2563eb',
-      background: '#eff6ff'
+      color: '#0580a1',
     }
   }
 
   if (lowerName.includes('oecd')) {
     return {
-      color: '#16a34a',
-      background: '#f0fdf4'
+      color: '#101d40',
     }
   }
 
   return {
-    color: '#9333ea',
-    background: '#faf5ff'
+    color: '#0f78c8',
   }
 }

@@ -1,6 +1,7 @@
 import { type FormEvent, useState, useEffect } from 'react'
 
 import './RunSinglePrompt.css'
+import ExportRowCard from './components/ExportRowCard'
 
 type Prompt = {
   id: number
@@ -8,6 +9,15 @@ type Prompt = {
   subject: string
   question: string
 }
+
+const modelOptions = [
+  'gpt-4o-mini',
+  'gemini-2.5-flash-lite',
+  'grok-4-1-fast-non-reasoning',
+  'gpt-5.4',
+  'gemini-3.1-pro-preview',
+  'grok-4.20-reasoning'
+]
 
 type ExportRow = {
   id: number
@@ -59,6 +69,11 @@ const fetchSourcesByIds = async (ids: number[]): Promise<SourceDto[]> => {
 function RunSinglePrompt() {
   const [prompts, setPrompts] = useState<Prompt[]>([])
   const [selectedPromptId, setSelectedPromptId] = useState<number | null>(null)
+  const [selectedModels, setSelectedModels] = useState<string[]>([
+    'gpt-4o-mini',
+    'gemini-2.5-flash-lite',
+    'grok-4-1-fast-non-reasoning'
+  ])
   const [submittedQuestion, setSubmittedQuestion] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [results, setResults] = useState<ResultWithSources[]>([])
@@ -82,6 +97,14 @@ function RunSinglePrompt() {
     }
   }
 
+  function handleModelToggle(modelName: string) {
+    setSelectedModels((prev) =>
+      prev.includes(modelName)
+        ? prev.filter((m) => m !== modelName)
+        : [...prev, modelName]
+    )
+  }
+
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
 
@@ -97,7 +120,10 @@ function RunSinglePrompt() {
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify([selectedPromptId])
+        body: JSON.stringify({
+          promptIds: [selectedPromptId],
+          modelNames: selectedModels
+        })
       })
 
       if (!response.ok) {
@@ -114,6 +140,7 @@ function RunSinglePrompt() {
       const sourceMap = new Map<number, SourceDto>(
         sourceDtos.map((source) => [source.id, source])
       )
+      
 
       const enrichedResults: ResultWithSources[] = data.map((result) => ({
         ...result,
@@ -137,6 +164,7 @@ function RunSinglePrompt() {
   return (
     <div className="app-container">
       <h1>Run Single Prompt</h1>
+
       <div className="prompt-select">
         <label>
           <strong>Select a Prompt</strong>
@@ -157,16 +185,59 @@ function RunSinglePrompt() {
         </select>
       </div>
 
+      <div className="prompt-select">
+        <label>
+          <strong>Select models</strong>
+        </label>
+
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+            gap: '10px',
+            marginTop: '12px'
+          }}
+        >
+          {modelOptions.map((model) => (
+            <label
+              key={model}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px',
+                background: 'white',
+                padding: '10px 14px',
+                borderRadius: '12px',
+                border: '1px solid #e2e8f0'
+              }}
+            >
+              <input
+                type="checkbox"
+                checked={selectedModels.includes(model)}
+                onChange={() => handleModelToggle(model)}
+              />
+              <span>{model}</span>
+            </label>
+          ))}
+        </div>
+      </div>
+
       {submittedQuestion && (
         <div className="question-preview">
           <strong>Question:</strong> {submittedQuestion}
         </div>
       )}
 
+      {error && (
+        <div className="error-message">
+          <strong>Error:</strong> {error}
+        </div>
+      )}
+
       <form onSubmit={handleSubmit}>
         <button
           type="submit"
-          disabled={!selectedPromptId || isLoading}
+          disabled={!selectedPromptId || isLoading || selectedModels.length === 0}
           className="run-button"
         >
           {isLoading ? 'Running models...' : 'Compare AI Responses'}
@@ -180,135 +251,13 @@ function RunSinglePrompt() {
           <h2>Responses</h2>
 
           <div className="results-grid">
-            {results.map((result, index) => {
-              const color = result.provider.includes('gpt')
-                ? '#2563eb'
-                : result.provider.includes('gemini')
-                  ? '#16a34a'
-                  : '#9333ea'
-
-              const background = result.provider.includes('gpt')
-                ? '#eff6ff'
-                : result.provider.includes('gemini')
-                  ? '#f0fdf4'
-                  : '#faf5ff'
-
-              return (
-                <div
-                  key={`${result.provider}-${index}`}
-                  className="result-card"
-                  style={{
-                    border: `2px solid ${color}`,
-                    background
-                  }}
-                >
-                  <h3 style={{ color }}>{result.provider}</h3>
-
-                  <p>
-                    <strong>Expected answer:</strong> {result.expectedAnswer}
-                  </p>
-
-                  <p>
-                    <strong>Actual answer:</strong> {result.actualAnswer}
-                  </p>               
-
-                  <div className="sources-section">
-                    <strong>Expected source:</strong>
-
-                    <div className="source-card-grid expected-grid">
-                      <div className="source-card">
-                        <div className="source-card-header">
-                          <span className="source-type-badge expected-badge">
-                            NSI Database
-                          </span>
-                        </div>
-
-                        <div className="source-card-body">
-                          <p className="source-name">{result.expectedSource}</p>
-                          <a
-                            href={result.expectedSource}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="source-link"
-                          >
-                            Open expected source
-                          </a>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="sources-section">
-                    <strong>Actual sources:</strong>
-
-                    {result.actualSourceDetails.length > 0 ? (
-                      <div className="source-card-grid">
-                        {result.actualSourceDetails.map((src) => (
-                          <div key={src.id} className="source-card">
-                            <div className="source-card-header">
-                              <span className="source-type-badge">
-                                {src.type || 'unknown'}
-                              </span>
-                            </div>
-
-                            <div className="source-card-body">
-                              <p className="source-name">
-                                {src.name || `Source #${src.id}`}
-                              </p>
-
-                              {src.url ? (
-                              <>
-                                <p className="source-url">{src.url}</p>
-
-                                <a
-                                  href={src.url}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="source-link"
-                                >
-                                  Open source
-                                </a>
-                              </>
-                            ) : (
-                              <p className="source-no-link">No URL available</p>
-                            )}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="no-source-text">No reference found</p>
-                    )}
-                  </div>
-
-                  <p>
-                    <strong>Relative error:</strong>{' '}
-                    {(result.relativeError * 100).toFixed(1) + '%'}
-                  </p>
-
-                  <p>
-                    <strong>Answer correct:</strong>{' '}
-                    {result.answerIsCorrect ? 'yes' : 'no'}
-                  </p>
-
-                  <p>
-                    <strong>Source correct:</strong>{' '}
-                    {result.sourceIsCorrect ? 'yes' : 'no'}
-                  </p>
-
-                  <div className="raw-text-block">
-                    <strong>Raw text:</strong>
-                    <p className="raw-text">{result.rawText ?? 'No raw text available'}</p>
-                  </div>
-
-                  {result.exception && (
-                    <p className="exception-text">
-                      <strong>Exception:</strong> {result.exception}
-                    </p>
-                  )}
-                </div>
-              )
-            })}
+            {results.map((result, index) => (
+              <ExportRowCard
+                key={`${result.provider}-${index}`}
+                result={result}
+                index={index}
+              />
+            ))}
           </div>
         </div>
       )}

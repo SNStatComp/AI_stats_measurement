@@ -1,8 +1,10 @@
-﻿using AI_stats_measurement.Backend.Services;
+﻿using AI_stats_measurement.Backend.Models;
+using AI_stats_measurement.Backend.Services;
 using AI_stats_measurement.Interface;
 using AI_stats_measurement.Models;
 using AI_stats_measurement.Services;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
 
 namespace AI_stats_measurement.Controllers
 {
@@ -19,34 +21,27 @@ namespace AI_stats_measurement.Controllers
             _evaluationPipeline = evaluationPipeline;
         }
 
-        [HttpPost("ask")]
-        public async Task<ActionResult<List<ModelResponse>>> AskAll([FromBody] List<Prompt> prompt, CancellationToken ct)
-        {
-            if (prompt is null)
-                return BadRequest("Prompt is required.");
-
-            var results = await _llmAggregator.AskAllAsync(prompt, ct);
-
-            return Ok(results);
-        }
-        [HttpPost("askById")]
-        public async Task<ActionResult<List<ModelResponse>>> AskByPromptIds([FromBody] List<int> promptIds, CancellationToken ct)
-        {
-            if (promptIds == null || promptIds.Count == 0)
-                return BadRequest("At least one PromptId is required.");
-
-            var results = await _llmAggregator.AskByPromptIdsAsync(promptIds, ct);
-            return Ok(results);
-        }
-
         [HttpPost("run")]
-        public async Task<ActionResult<List<ModelResponse>>> Run([FromBody] List<int> promptIds, CancellationToken ct)
+        public async Task<ActionResult<List<ModelResponse>>> Run([FromBody] RunRequest request, CancellationToken ct)
         {
-            if (promptIds == null || promptIds.Count == 0)
+            if (request.PromptIds == null || request.PromptIds.Count == 0)
                 return BadRequest("At least one PromptId is required.");
 
-            var results = await _evaluationPipeline.RunAsync(promptIds, ct);
+            var results = await _evaluationPipeline.RunAsync(request.PromptIds, request.ModelNames, ct);
             return Ok(results);
-        }      
+        }
+
+        [HttpPost("recalculate")]
+        public async Task<ActionResult<List<ExportRow>>> Recalculate([FromBody] List<int> promptIds, CancellationToken ct)
+        {
+            var result = await _evaluationPipeline.RecalculateAsync(ct);
+            return Ok(result);
+        }
+
+        public class RunRequest
+        {
+            public List<int> PromptIds { get; set; } = new();
+            public List<string> ModelNames { get; set; } = new();
+        }
     }
 }
