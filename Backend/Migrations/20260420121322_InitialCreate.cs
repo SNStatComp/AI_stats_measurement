@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore.Migrations;
+using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
@@ -15,21 +17,22 @@ namespace AI_stats_measurement.Backend.Migrations
                 name: "ExportRows",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    Theme = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    Question = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    ExpectedAnswer = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
-                    ExpectedSource = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    ActualAnswer = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
-                    Provider = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    RawText = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    Exception = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    SquareMeanRootError = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
-                    RelativeError = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
-                    AnswerIsCorrect = table.Column<bool>(type: "bit", nullable: false),
-                    SourceIsCorrect = table.Column<bool>(type: "bit", nullable: false),
-                    CreatedUtc = table.Column<DateTime>(type: "datetime2", nullable: false)
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    Theme = table.Column<string>(type: "text", nullable: false),
+                    Question = table.Column<string>(type: "text", nullable: false),
+                    ExpectedAnswer = table.Column<decimal>(type: "numeric", nullable: false),
+                    ExpectedSource = table.Column<string>(type: "text", nullable: false),
+                    ActualAnswer = table.Column<decimal>(type: "numeric", nullable: false),
+                    ActualSource = table.Column<List<int>>(type: "integer[]", nullable: false),
+                    Provider = table.Column<string>(type: "text", nullable: false),
+                    RawText = table.Column<string>(type: "text", nullable: true),
+                    Exception = table.Column<string>(type: "text", nullable: true),
+                    SquareMeanRootError = table.Column<decimal>(type: "numeric", nullable: false),
+                    RelativeError = table.Column<decimal>(type: "numeric", nullable: false),
+                    AnswerIsCorrect = table.Column<bool>(type: "boolean", nullable: false),
+                    SourceIsCorrect = table.Column<bool>(type: "boolean", nullable: false),
+                    CreatedUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -40,11 +43,11 @@ namespace AI_stats_measurement.Backend.Migrations
                 name: "Sources",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    Name = table.Column<string>(type: "nvarchar(450)", nullable: true),
-                    Url = table.Column<string>(type: "nvarchar(450)", nullable: true),
-                    Type = table.Column<string>(type: "nvarchar(max)", nullable: true)
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    Name = table.Column<string>(type: "character varying(512)", maxLength: 512, nullable: true),
+                    Url = table.Column<string>(type: "character varying(2048)", maxLength: 2048, nullable: true),
+                    Type = table.Column<string>(type: "text", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -55,17 +58,18 @@ namespace AI_stats_measurement.Backend.Migrations
                 name: "Prompts",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    Instruction = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    Theme = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    Periode = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    Subject = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    Question = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    Answer = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
-                    SourceId = table.Column<int>(type: "int", nullable: false),
-                    AnswerLocation = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    CreatedUtc = table.Column<DateTime>(type: "datetime2", nullable: false)
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    Provider = table.Column<string>(type: "text", nullable: false),
+                    Instruction = table.Column<string>(type: "text", nullable: false),
+                    Theme = table.Column<string>(type: "text", nullable: false),
+                    Periode = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    Subject = table.Column<string>(type: "text", nullable: false),
+                    Question = table.Column<string>(type: "text", nullable: false),
+                    Answer = table.Column<decimal>(type: "numeric", nullable: false),
+                    SourceId = table.Column<int>(type: "integer", nullable: false),
+                    AnswerLocation = table.Column<string>(type: "text", nullable: false),
+                    CreatedUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -82,13 +86,13 @@ namespace AI_stats_measurement.Backend.Migrations
                 name: "ModelResponses",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    PromptId = table.Column<int>(type: "int", nullable: false),
-                    Provider = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    RawText = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    Exception = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    CreatedUtc = table.Column<DateTime>(type: "datetime2", nullable: false)
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    PromptId = table.Column<int>(type: "integer", nullable: false),
+                    Provider = table.Column<string>(type: "text", nullable: false),
+                    RawText = table.Column<string>(type: "text", nullable: true),
+                    Exception = table.Column<string>(type: "text", nullable: true),
+                    CreatedUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -105,11 +109,11 @@ namespace AI_stats_measurement.Backend.Migrations
                 name: "PromptDimensions",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    PromptId = table.Column<int>(type: "int", nullable: false),
-                    Name = table.Column<string>(type: "nvarchar(450)", nullable: false),
-                    Value = table.Column<string>(type: "nvarchar(max)", nullable: false)
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    PromptId = table.Column<int>(type: "integer", nullable: false),
+                    Name = table.Column<string>(type: "text", nullable: false),
+                    Value = table.Column<string>(type: "text", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -126,10 +130,10 @@ namespace AI_stats_measurement.Backend.Migrations
                 name: "ParsedModelResponses",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    ModelResponseId = table.Column<int>(type: "int", nullable: false),
-                    Answer = table.Column<decimal>(type: "decimal(18,2)", nullable: false)
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    ModelResponseId = table.Column<int>(type: "integer", nullable: false),
+                    Answer = table.Column<decimal>(type: "numeric", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -146,13 +150,14 @@ namespace AI_stats_measurement.Backend.Migrations
                 name: "FactCheckResults",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    ParsedModelResponseId = table.Column<int>(type: "int", nullable: false),
-                    SquareMeanRootError = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
-                    RelativeError = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
-                    AnswerIsCorrect = table.Column<bool>(type: "bit", nullable: false),
-                    SourceIsCorrect = table.Column<bool>(type: "bit", nullable: false)
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    ParsedModelResponseId = table.Column<int>(type: "integer", nullable: false),
+                    AbsoluteError = table.Column<decimal>(type: "numeric", nullable: false),
+                    RelativeError = table.Column<decimal>(type: "numeric", nullable: false),
+                    AnswerIsCorrect = table.Column<bool>(type: "boolean", nullable: false),
+                    SourceIsCorrect = table.Column<bool>(type: "boolean", nullable: false),
+                    Abstained = table.Column<bool>(type: "boolean", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -169,20 +174,14 @@ namespace AI_stats_measurement.Backend.Migrations
                 name: "ParsedModelResponseSources",
                 columns: table => new
                 {
-                    ParsedModelResponseId = table.Column<int>(type: "int", nullable: false),
-                    SourceId = table.Column<int>(type: "int", nullable: false),
-                    ExportRowId = table.Column<int>(type: "int", nullable: true)
+                    ParsedModelResponseId = table.Column<int>(type: "integer", nullable: false),
+                    SourceId = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_ParsedModelResponseSources", x => new { x.ParsedModelResponseId, x.SourceId });
                     table.ForeignKey(
-                        name: "FK_ParsedModelResponseSources_ExportRows_ExportRowId",
-                        column: x => x.ExportRowId,
-                        principalTable: "ExportRows",
-                        principalColumn: "Id");
-                    table.ForeignKey(
-                        name: "FK_ParsedModelResponseSources_ParsedModelResponses_ParsedModelResponseId",
+                        name: "FK_ParsedModelResponseSources_ParsedModelResponses_ParsedModel~",
                         column: x => x.ParsedModelResponseId,
                         principalTable: "ParsedModelResponses",
                         principalColumn: "Id",
@@ -213,11 +212,6 @@ namespace AI_stats_measurement.Backend.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_ParsedModelResponseSources_ExportRowId",
-                table: "ParsedModelResponseSources",
-                column: "ExportRowId");
-
-            migrationBuilder.CreateIndex(
                 name: "IX_ParsedModelResponseSources_SourceId",
                 table: "ParsedModelResponseSources",
                 column: "SourceId");
@@ -237,13 +231,15 @@ namespace AI_stats_measurement.Backend.Migrations
                 name: "IX_Sources_Name_Url",
                 table: "Sources",
                 columns: new[] { "Name", "Url" },
-                unique: true,
-                filter: "[Name] IS NOT NULL AND [Url] IS NOT NULL");
+                unique: true);
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.DropTable(
+                name: "ExportRows");
+
             migrationBuilder.DropTable(
                 name: "FactCheckResults");
 
@@ -252,9 +248,6 @@ namespace AI_stats_measurement.Backend.Migrations
 
             migrationBuilder.DropTable(
                 name: "PromptDimensions");
-
-            migrationBuilder.DropTable(
-                name: "ExportRows");
 
             migrationBuilder.DropTable(
                 name: "ParsedModelResponses");

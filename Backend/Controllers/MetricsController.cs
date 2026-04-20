@@ -36,24 +36,6 @@ namespace AI_stats_measurement.Backend.Controllers
             // Filter out records with exceptions in the model response
             factsQuery = factsQuery.Where(f => f.ParsedModelResponse.ModelResponse.Exception == null);
 
-            if (!string.IsNullOrWhiteSpace(filter.Theme))
-            {
-                factsQuery = factsQuery.Where(f =>
-                    f.ParsedModelResponse.ModelResponse.Prompt.Theme == filter.Theme);
-            }
-
-            if (!string.IsNullOrWhiteSpace(filter.Llm))
-            {
-                factsQuery = factsQuery.Where(f =>
-                    f.ParsedModelResponse.ModelResponse.Provider == filter.Llm);
-            }
-
-            if (!string.IsNullOrWhiteSpace(filter.Nsi))
-            {
-                factsQuery = factsQuery.Where(f =>
-                    f.ParsedModelResponse.ModelResponse.Prompt.Provider == filter.Nsi);
-            }
-
             var facts = factsQuery.ToList();
 
             var metrics = _analyticsService.GetMetricsPerNsi(

@@ -1,6 +1,7 @@
 import { type FormEvent, useState, useEffect } from 'react'
 import './RunSinglePrompt.css'
 import ExportRowCard from './components/ExportRowCard'
+import { API_BASE_URL } from '../config'
 
 const nsiOptions = ['CBS', 'OECD', 'StatBank Denmark']
 
@@ -9,8 +10,9 @@ const modelOptions = [
   'gemini-2.5-flash-lite',
   'grok-4-1-fast-non-reasoning',
   'gpt-5.4',
-  'gemini-3.1-pro-preview',
-  'grok-4.20-reasoning'
+  //'gemini-3.1-pro-preview',
+  'grok-4.20-reasoning',
+  'gemini-2.5-pro'
 ]
 
 const downloadFile = (content: string, fileName: string, contentType: string) => {
@@ -114,7 +116,7 @@ const selectStyle = {
 const fetchSourcesByIds = async (ids: number[]): Promise<SourceDto[]> => {
   if (!ids.length) return []
 
-  const response = await fetch('http://localhost:5201/api/sources/getByIds', {
+  const response = await fetch('${API_BASE_URL}/api/sources/getByIds', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json'
@@ -159,7 +161,7 @@ function RunMultiplePrompts() {
 }
 
   useEffect(() => {
-    fetch('http://localhost:5201/api/prompts')
+    fetch('${API_BASE_URL}/api/prompts')
       .then((res) => res.json())
       .then((data: Prompt[]) => {
         setPrompts(data)
@@ -170,7 +172,7 @@ function RunMultiplePrompts() {
   }, [])
 
   useEffect(() => {
-    fetch('http://localhost:5201/api/prompts/themes')
+    fetch('${API_BASE_URL}/api/prompts/themes')
       .then((res) => res.json())
       .then((data: string[]) => setThemes(data))
       .catch(() => console.log('Failed loading themes'))
@@ -189,7 +191,7 @@ function RunMultiplePrompts() {
       return
     }
 
-    fetch(`http://localhost:5201/api/prompts/nsi?nsi=${selectedNsi}`)
+    fetch(`${API_BASE_URL}/api/prompts/nsi?nsi=${selectedNsi}`)
       .then((res) => res.json())
       .then((ids: number[]) => {
         let filtered = prompts.filter((p) => ids.includes(p.id))
@@ -224,7 +226,7 @@ function RunMultiplePrompts() {
     setResults([])
 
     try {
-    const response = await fetch('http://localhost:5201/api/llm/run', {
+    const response = await fetch('${API_BASE_URL}/api/llm/run', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'

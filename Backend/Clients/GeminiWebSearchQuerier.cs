@@ -8,7 +8,7 @@ namespace AI_stats_measurement.Backend.Clients
     {
         private readonly Client _client;
 
-        public string Name => "gemini-3.1-pro-preview";
+        public string Name => "gemini-2.5-pro";
 
         public GeminiWebSearchQuerier(IConfiguration config)
         {

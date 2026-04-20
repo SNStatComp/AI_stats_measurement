@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { ResultCard } from './components/ResultCard'
 import { Filters } from './components/Filters'
 import './Analytics.css'
+import { API_BASE_URL } from '../config'
 
 const pageTheme = {
   background: '#f8fafc',
@@ -45,7 +46,7 @@ function Analytics() {
     setError('')
 
     try {
-      const response = await fetch('http://localhost:5201/api/metrics', {
+      const response = await fetch(`${API_BASE_URL}/api/metrics`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

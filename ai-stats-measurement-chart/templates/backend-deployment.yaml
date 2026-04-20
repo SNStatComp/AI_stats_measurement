@@ -1,0 +1,30 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "ai-stats-measurements-chart.backendName" . }}
+spec:
+  replicas: {{ .Values.backend.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ include "ai-stats-measurements-chart.backendName" . }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "ai-stats-measurements-chart.backendName" . }}
+    spec:
+      containers:
+        - name: backend
+          image: "{{ .Values.backend.image.repository }}:{{ .Values.backend.image.tag }}"
+          imagePullPolicy: {{ .Values.backend.image.pullPolicy }}
+          ports:
+            - containerPort: 8080
+          env:
+            - name: ASPNETCORE_URLS
+              value: "http://+:8080"
+            - name: ASPNETCORE_ENVIRONMENT
+              value: {{ .Values.backend.env.ASPNETCORE_ENVIRONMENT | quote }}
+          envFrom:
+            - secretRef:
+                name: {{ .Values.backend.secretName }}
+          resources:
+{{ toYaml .Values.backend.resources | indent 12 }}

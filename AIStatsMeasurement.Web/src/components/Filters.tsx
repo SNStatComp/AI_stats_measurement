@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { API_BASE_URL } from '../../config'
 
 type FiltersProps = {
   selectedNsi: string
@@ -12,12 +13,15 @@ type FiltersProps = {
 const nsiOptions = ['CBS', 'OECD', 'StatBank Denmark']
 
 const llmOptions = [
-  'gemini-2.5-flash-lite-preview-09-2025',
+  'gemini-2.5-flash-lite',
   'gpt-4o-mini',
   'grok-4-1-fast-non-reasoning',
-  'gemini-3.1-pro-preview',
+  'gemini-3.1-pro',
+  'gemini-2.5-pro',
   'gpt-5.4',
-  'grok-4.20-reasoning'
+  'grok-4.20-reasoning',
+  'websearch enabled',
+  'websearch disabled'
 ]
 
 export function Filters({
@@ -31,7 +35,7 @@ export function Filters({
   const [themes, setThemes] = useState<string[]>([])
 
   useEffect(() => {
-    fetch('http://localhost:5201/api/prompts/themes')
+    fetch(`${API_BASE_URL}/api/prompts/themes`)
       .then((res) => res.json())
       .then((data: string[]) => setThemes(data))
       .catch(() => console.log('Failed loading themes'))

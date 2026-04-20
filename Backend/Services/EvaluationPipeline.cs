@@ -1,4 +1,5 @@
 ﻿using AI_stats_measurement.Backend.Models;
+using AI_stats_measurement.Backend.Services.Parsing;
 using AI_stats_measurement.Data;
 using AI_stats_measurement.Models;
 using AI_stats_measurement.Services;
@@ -51,27 +52,14 @@ namespace AI_stats_measurement.Backend.Services
 
                 ParsedModelResponse? parsed = null;
 
-
                 // Step 3: Parse the model response
-                if (response.Prompt.Provider == "CBS")
+                parsed = prompt.Provider switch
                 {
-                    parsed = ModelResponseParser.ParseDutch(response.Id, response.RawText);
-                }
-                else if (response.Prompt.Provider == "OECD")
-                {
-                    parsed = ModelResponseParser.ParseEnglish(response.Id, response.RawText);
-                }
-                else if (response.Prompt.Provider == "StatBank Denmark")
-                {
-                    parsed = ModelResponseParser.ParseEnglish(response.Id, response.RawText);
-                }
-
-                if (parsed is null)
-                {
-                    // skip
-                    throw new InvalidOperationException(
-                        $"Unsupported NSI: {response.Prompt.Provider}");
-                }
+                    "CBS" => ModelResponseParser.ParseDutch(response.Id, response.RawText),
+                    "OECD" => ModelResponseParser.ParseEnglish(response.Id, response.RawText),
+                    "StatBank Denmark" => ModelResponseParser.ParseEnglish(response.Id, response.RawText),
+                    _ => throw new InvalidOperationException($"Unsupported NSI: {prompt.Provider}")
+                };
 
                 await _sourceNormalizer.AttachNormalizedSourcesAsync(parsed, ct);
 
