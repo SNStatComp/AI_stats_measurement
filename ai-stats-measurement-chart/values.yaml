@@ -44,6 +44,6 @@ postgres:
 ingress:
   enabled: true
   className: ""
-  host: ai-stats-diegoespinosa.user.lab.sspcloud.fr
+  host: ai-stats-measurement.lab.sspcloud.fr
   frontendPath: /
   backendPath: /api

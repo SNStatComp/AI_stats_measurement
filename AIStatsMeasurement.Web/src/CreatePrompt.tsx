@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react'
+import { API_BASE_URL } from '../config'
 
 type CreatePromptRequest = {
   provider: string
@@ -59,7 +60,7 @@ function CreatePrompt() {
     setError('')
 
     try {
-      const response = await fetch('http://localhost:5201/api/prompts', {
+      const response = await fetch(`${API_BASE_URL}/api/prompts`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
