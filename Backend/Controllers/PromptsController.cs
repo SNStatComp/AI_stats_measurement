@@ -22,6 +22,29 @@ namespace AI_stats_measurement.Backend.Controllers
             _context = context;
         }
 
+        private static DateTime EnsureUtc(DateTime value)
+        {
+            return value.Kind switch
+            {
+                DateTimeKind.Utc => value,
+                DateTimeKind.Local => value.ToUniversalTime(),
+                _ => DateTime.SpecifyKind(value, DateTimeKind.Utc)
+            };
+        }
+
+        private static DateTime? EnsureUtc(DateTime? value)
+        {
+            if (!value.HasValue)
+                return null;
+
+            return value.Value.Kind switch
+            {
+                DateTimeKind.Utc => value.Value,
+                DateTimeKind.Local => value.Value.ToUniversalTime(),
+                _ => DateTime.SpecifyKind(value.Value, DateTimeKind.Utc)
+            };
+        }
+
         // GET: api/Prompts
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Prompt>>> GetPrompts()
@@ -126,7 +149,7 @@ namespace AI_stats_measurement.Backend.Controllers
                     dto.Provider,
                     dto.Instruction,
                     dto.Theme,
-                    dto.Periode,
+                    EnsureUtc(dto.Periode),
                     dto.Subject,
                     dto.Question,
                     dto.Answer,
