@@ -42,8 +42,8 @@ postgres:
     size: 1Gi
 
 ingress:
-  enabled: false
+  enabled: true
   className: ""
-  host: ai-stats-measurement.local
+  host: ai-stats-diegoespinosa.user.lab.sspcloud.fr
   frontendPath: /
   backendPath: /api
