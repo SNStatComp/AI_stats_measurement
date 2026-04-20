@@ -9,7 +9,7 @@ using Microsoft.EntityFrameworkCore;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddDbContext<AIMeasureDbContext>(options =>
-    options.UseSqlServer(
+    options.UseNpgsql(
         builder.Configuration.GetConnectionString("Default")));
 
 builder.Services.AddCors(options =>
@@ -46,6 +46,12 @@ builder.Services.AddScoped<SourceNormalizer>();
 builder.Services.AddScoped<EvaluationPipeline>();
 
 var app = builder.Build();
+
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<AIMeasureDbContext>();
+    db.Database.Migrate();
+}
 
 //app.UseHttpsRedirection();
 

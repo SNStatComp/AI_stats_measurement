@@ -1,7 +1,7 @@
 import { type FormEvent, useState, useEffect } from 'react'
-
 import './RunSinglePrompt.css'
 import ExportRowCard from './components/ExportRowCard'
+import { API_BASE_URL } from '../config'
 
 type Prompt = {
   id: number
@@ -15,7 +15,8 @@ const modelOptions = [
   'gemini-2.5-flash-lite',
   'grok-4-1-fast-non-reasoning',
   'gpt-5.4',
-  'gemini-3.1-pro-preview',
+  //'gemini-3.1-pro-preview',
+  'gemini-2.5-pro',
   'grok-4.20-reasoning'
 ]
 
@@ -51,7 +52,7 @@ type ResultWithSources = ExportRow & {
 const fetchSourcesByIds = async (ids: number[]): Promise<SourceDto[]> => {
   if (!ids.length) return []
 
-  const response = await fetch('http://localhost:5201/api/sources/getByIds', {
+  const response = await fetch(`${API_BASE_URL}/api/sources/getByIds`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json'
@@ -80,7 +81,7 @@ function RunSinglePrompt() {
   const [error, setError] = useState('')
 
   useEffect(() => {
-    fetch('http://localhost:5201/api/prompts')
+    fetch(`${API_BASE_URL}/api/prompts`)
       .then((res) => res.json())
       .then((data) => setPrompts(data))
       .catch(() => console.log('Failed loading prompts'))
@@ -115,7 +116,7 @@ function RunSinglePrompt() {
     setResults([])
 
     try {
-      const response = await fetch('http://localhost:5201/api/llm/run', {
+      const response = await fetch(`${API_BASE_URL}/api/llm/run`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

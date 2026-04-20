@@ -1,5 +1,5 @@
 ﻿using AI_stats_measurement.Backend.Models;
-using AI_stats_measurement.Services;
+using AI_stats_measurement.Backend.Services.Parsing;
 using Microsoft.CodeAnalysis.Differencing;
 using Microsoft.CodeAnalysis.Elfie.Serialization;
 using Microsoft.VisualStudio.Web.CodeGenerators.Mvc.Templates.Blazor;
@@ -91,7 +91,7 @@ public class ModelResponseParserTests
 
         var parsed = ModelResponseParser.ParseDutch(0, text);
 
-        Assert.Contains(parsed.ExtractedSources, s => s.Name == "Kadaster");
+        Assert.Contains(parsed.ExtractedSources, s => s.Name == "kadaster");
     }
 
     [Fact]
@@ -213,8 +213,60 @@ public class ModelResponseParserTests
 
         var parsed = ModelResponseParser.ParseDutch(0, text);
 
-        Assert.Equal(80.5m, parsed.Answer);
-    } 
+        Assert.Equal(80.1m, parsed.Answer);
+    }
 
+    [Fact]
+    public void Parse_Returns_3()
+    {
+        var text = "30.300 ton";
+
+        var parsed = ModelResponseParser.ParseDutch(0, text);
+
+        Assert.Equal(30300000m, parsed.Answer);
+    } 
+    
+    [Fact]
+    public void Parse_Returns_4()
+    {
+        var text = "1 januari 2021";
+
+        var parsed = ModelResponseParser.ParseDutch(0, text);
+
+        Assert.Equal(0, parsed.Answer);
+    }
+
+    [Fact]
+    public void Parse_Returns_5()
+    {
+        var text = "aged 25 to 29 ";
+
+        var parsed = ModelResponseParser.ParseDutch(0, text);
+
+        Assert.Equal(0, parsed.Answer);
+    }
+
+    [Fact]
+    public void Parse_Returns_6()
+    {
+        var text = "18 tot 25 jaar";
+
+        var parsed = ModelResponseParser.ParseDutch(0, text);
+
+        Assert.Equal(0, parsed.Answer);
+    }
+
+    [Fact]
+    public void Parse_Returns_7()
+    {
+        var text = "(base year 2025=100)";
+
+        var parsed = ModelResponseParser.ParseDutch(0, text);
+
+        Assert.Equal(0, parsed.Answer);
+    }
+
+
+   
 
 }

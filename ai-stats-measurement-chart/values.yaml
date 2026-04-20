@@ -1,0 +1,49 @@
+nameOverride: ""
+fullnameOverride: "ai-stats"
+
+frontend:
+  replicaCount: 1
+  image:
+    repository: jouw-dockerhub-gebruiker/ai-stats-measurement-frontend
+    tag: latest
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 80
+
+backend:
+  secretName: ai-stats-measurement-secrets
+  replicaCount: 1
+  image:
+    repository: jouw-dockerhub-gebruiker/ai-stats-measurement-backend
+    tag: latest
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 8080
+  env:
+    ASPNETCORE_ENVIRONMENT: Production
+  resources: {}
+
+postgres:
+  secretName: ai-stats-measurement-secrets
+  enabled: true
+  image:
+    repository: postgres
+    tag: "16"
+    pullPolicy: IfNotPresent
+  auth:
+    username: appuser
+    database: AIStatsMeasurementDB
+  service:
+    port: 5432
+  persistence:
+    enabled: true
+    size: 1Gi
+
+ingress:
+  enabled: false
+  className: ""
+  host: ai-stats-measurement.local
+  frontendPath: /
+  backendPath: /api
