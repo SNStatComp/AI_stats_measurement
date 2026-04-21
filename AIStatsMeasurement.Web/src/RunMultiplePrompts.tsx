@@ -116,7 +116,7 @@ const selectStyle = {
 const fetchSourcesByIds = async (ids: number[]): Promise<SourceDto[]> => {
   if (!ids.length) return []
 
-  const response = await fetch('${API_BASE_URL}/api/sources/getByIds', {
+  const response = await fetch(`${API_BASE_URL}/api/sources/getByIds`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json'
@@ -161,7 +161,7 @@ function RunMultiplePrompts() {
 }
 
   useEffect(() => {
-    fetch('${API_BASE_URL}/api/prompts')
+    fetch(`${API_BASE_URL}/api/prompts`)
       .then((res) => res.json())
       .then((data: Prompt[]) => {
         setPrompts(data)
@@ -172,7 +172,7 @@ function RunMultiplePrompts() {
   }, [])
 
   useEffect(() => {
-    fetch('${API_BASE_URL}/api/prompts/themes')
+    fetch(`${API_BASE_URL}/api/prompts/themes`)
       .then((res) => res.json())
       .then((data: string[]) => setThemes(data))
       .catch(() => console.log('Failed loading themes'))
@@ -226,7 +226,7 @@ function RunMultiplePrompts() {
     setResults([])
 
     try {
-    const response = await fetch('${API_BASE_URL}/api/llm/run', {
+    const response = await fetch(`${API_BASE_URL}/api/llm/run`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
