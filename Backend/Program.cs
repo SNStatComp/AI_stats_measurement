@@ -12,6 +12,10 @@ builder.Services.AddDbContext<AIMeasureDbContext>(options =>
     options.UseNpgsql(
         builder.Configuration.GetConnectionString("Default")));
 
+//builder.Services.AddDbContext<AIMeasureDbContext>(options =>
+//    options.UseSqlServer(
+//        builder.Configuration.GetConnectionString("Default")));
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
