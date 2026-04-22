@@ -6,7 +6,7 @@ frontend:
   image:
     repository: diegoiec/ai-stats-measurement-frontend
     tag: latest
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
   service:
     type: ClusterIP
     port: 80
@@ -17,7 +17,7 @@ backend:
   image:
     repository: diegoiec/ai-stats-measurement-backend
     tag: latest
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
   service:
     type: ClusterIP
     port: 8080

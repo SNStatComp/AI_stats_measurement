@@ -2,6 +2,7 @@ import { type FormEvent, useState, useEffect } from 'react'
 import './RunSinglePrompt.css'
 import ExportRowCard from './components/ExportRowCard'
 import { API_BASE_URL } from '../config'
+import { apiFetch } from './apiFetch'
 
 const nsiOptions = ['CBS', 'OECD', 'StatBank Denmark']
 
@@ -116,7 +117,7 @@ const selectStyle = {
 const fetchSourcesByIds = async (ids: number[]): Promise<SourceDto[]> => {
   if (!ids.length) return []
 
-  const response = await fetch(`${API_BASE_URL}/api/sources/getByIds`, {
+  const response = await apiFetch(`/api/sources/getByIds`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json'
@@ -161,7 +162,7 @@ function RunMultiplePrompts() {
 }
 
   useEffect(() => {
-    fetch(`${API_BASE_URL}/api/prompts`)
+    apiFetch(`${API_BASE_URL}/api/prompts`)
       .then((res) => res.json())
       .then((data: Prompt[]) => {
         setPrompts(data)
@@ -172,7 +173,7 @@ function RunMultiplePrompts() {
   }, [])
 
   useEffect(() => {
-    fetch(`${API_BASE_URL}/api/prompts/themes`)
+    apiFetch(`${API_BASE_URL}/api/prompts/themes`)
       .then((res) => res.json())
       .then((data: string[]) => setThemes(data))
       .catch(() => console.log('Failed loading themes'))
@@ -191,7 +192,7 @@ function RunMultiplePrompts() {
       return
     }
 
-    fetch(`${API_BASE_URL}/api/prompts/nsi?nsi=${selectedNsi}`)
+    apiFetch(`${API_BASE_URL}/api/prompts/nsi?nsi=${selectedNsi}`)
       .then((res) => res.json())
       .then((ids: number[]) => {
         let filtered = prompts.filter((p) => ids.includes(p.id))
@@ -226,7 +227,7 @@ function RunMultiplePrompts() {
     setResults([])
 
     try {
-    const response = await fetch(`${API_BASE_URL}/api/llm/run`, {
+    const response = await apiFetch(`${API_BASE_URL}/api/llm/run`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'

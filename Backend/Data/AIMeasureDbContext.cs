@@ -1,10 +1,11 @@
 ﻿using AI_stats_measurement.Backend.Models;
 using AI_stats_measurement.Models;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
 namespace AI_stats_measurement.Data;
 
-public class AIMeasureDbContext : DbContext
+public class AIMeasureDbContext : IdentityDbContext<ApplicationUser>
 {
     public AIMeasureDbContext(DbContextOptions<AIMeasureDbContext> options)
         : base(options)
@@ -22,6 +23,8 @@ public class AIMeasureDbContext : DbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        base.OnModelCreating(modelBuilder);
+
         modelBuilder.Entity<PromptDimension>()
             .HasIndex(d => new { d.PromptId, d.Name })
             .IsUnique();

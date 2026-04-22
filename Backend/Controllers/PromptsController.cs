@@ -1,13 +1,14 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+﻿using AI_stats_measurement.Backend.Dto;
+using AI_stats_measurement.Backend.Models;
+using AI_stats_measurement.Data;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using AI_stats_measurement.Data;
-using AI_stats_measurement.Backend.Dto;
-using AI_stats_measurement.Backend.Models;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace AI_stats_measurement.Backend.Controllers
 {
@@ -85,6 +86,7 @@ namespace AI_stats_measurement.Backend.Controllers
         }
 
         // PUT: api/Prompts/5
+        [Authorize]
         [HttpPut("{id}")]
         public async Task<IActionResult> PutPrompt(int id, Prompt prompt)
         {
@@ -115,6 +117,7 @@ namespace AI_stats_measurement.Backend.Controllers
         }
 
         // POST: api/Prompts
+        [Authorize]
         [HttpPost]
         public async Task<ActionResult<IEnumerable<int>>> PostPrompts([FromBody] List<PromptDto> dtos)
         {
@@ -172,6 +175,7 @@ namespace AI_stats_measurement.Backend.Controllers
         }
 
         // DELETE: api/Prompts/5
+        [Authorize]
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeletePrompt(int id)
         {

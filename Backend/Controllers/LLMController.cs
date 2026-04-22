@@ -3,6 +3,7 @@ using AI_stats_measurement.Backend.Services;
 using AI_stats_measurement.Interface;
 using AI_stats_measurement.Models;
 using AI_stats_measurement.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 
@@ -21,6 +22,7 @@ namespace AI_stats_measurement.Controllers
             _evaluationPipeline = evaluationPipeline;
         }
 
+        [Authorize]
         [HttpPost("run")]
         public async Task<ActionResult<List<ModelResponse>>> Run([FromBody] RunRequest request, CancellationToken ct)
         {
@@ -31,6 +33,7 @@ namespace AI_stats_measurement.Controllers
             return Ok(results);
         }
 
+        [Authorize]
         [HttpPost("recalculate")]
         public async Task<ActionResult<List<ExportRow>>> Recalculate([FromBody] List<int> promptIds, CancellationToken ct)
         {
