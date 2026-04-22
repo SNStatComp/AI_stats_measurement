@@ -4,8 +4,15 @@ import Analytics from "./Analytics.tsx";
 import RunSinglePrompt from "./RunSinglePrompt.tsx";
 import RunMultiplePrompts from "./RunMultiplePrompts.tsx";
 import CreatePrompt from "./CreatePrompt.tsx";
+import LoginPage from "./LoginPage.tsx";
 
 function App() {
+  //const token = localStorage.getItem("token");
+
+  // if (!token) {
+  //   return <LoginPage />;
+  // }
+
   return (
     <BrowserRouter>
       <Navbar />
@@ -14,6 +21,7 @@ function App() {
         <Route path="/run" element={<RunSinglePrompt />} />
         <Route path="/run-multiple" element={<RunMultiplePrompts />} />
         <Route path="/create-prompt" element={<CreatePrompt />} />
+        <Route path="/login" element={<LoginPage />} />
       </Routes>
     </BrowserRouter>
   );

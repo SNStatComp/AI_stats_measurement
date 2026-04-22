@@ -2,6 +2,7 @@ import { type FormEvent, useState, useEffect } from 'react'
 import './RunSinglePrompt.css'
 import ExportRowCard from './components/ExportRowCard'
 import { API_BASE_URL } from '../config'
+import { apiFetch } from './apiFetch'
 
 type Prompt = {
   id: number
@@ -52,7 +53,7 @@ type ResultWithSources = ExportRow & {
 const fetchSourcesByIds = async (ids: number[]): Promise<SourceDto[]> => {
   if (!ids.length) return []
 
-  const response = await fetch(`${API_BASE_URL}/api/sources/getByIds`, {
+  const response = await apiFetch(`/api/sources/getByIds`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json'
@@ -81,7 +82,7 @@ function RunSinglePrompt() {
   const [error, setError] = useState('')
 
   useEffect(() => {
-    fetch(`${API_BASE_URL}/api/prompts`)
+    apiFetch(`${API_BASE_URL}/api/prompts`)
       .then((res) => res.json())
       .then((data) => setPrompts(data))
       .catch(() => console.log('Failed loading prompts'))
@@ -116,7 +117,7 @@ function RunSinglePrompt() {
     setResults([])
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/llm/run`, {
+      const response = await apiFetch(`${API_BASE_URL}/api/llm/run`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

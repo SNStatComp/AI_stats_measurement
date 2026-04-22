@@ -36,6 +36,12 @@ function Navbar() {
         >
           Create Prompt
         </Link>
+        <Link
+          to="/login"
+          className={location.pathname === "/login" ? "active" : ""}
+        >
+          Login
+        </Link>
       </div>
       </div>
     </nav>

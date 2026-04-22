@@ -4,9 +4,9 @@ fullnameOverride: "ai-stats"
 frontend:
   replicaCount: 1
   image:
-    repository: jouw-dockerhub-gebruiker/ai-stats-measurement-frontend
+    repository: diegoiec/ai-stats-measurement-frontend
     tag: latest
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
   service:
     type: ClusterIP
     port: 80
@@ -15,9 +15,9 @@ backend:
   secretName: ai-stats-measurement-secrets
   replicaCount: 1
   image:
-    repository: jouw-dockerhub-gebruiker/ai-stats-measurement-backend
+    repository: diegoiec/ai-stats-measurement-backend
     tag: latest
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
   service:
     type: ClusterIP
     port: 8080
@@ -42,8 +42,8 @@ postgres:
     size: 1Gi
 
 ingress:
-  enabled: false
+  enabled: true
   className: ""
-  host: ai-stats-measurement.local
+  host: ai-stats-measurement.lab.sspcloud.fr
   frontendPath: /
   backendPath: /api

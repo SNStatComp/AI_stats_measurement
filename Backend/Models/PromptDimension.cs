@@ -19,5 +19,16 @@ namespace AI_stats_measurement.Backend.Models
             Name = name;
             Value = value;
         }
+
+        public static PromptDimension Import(int id, int promptId, string name, string value)
+        {
+            return new PromptDimension
+            {
+                Id = id,
+                PromptId = promptId,
+                Name = name,
+                Value = value
+            };
+        }
     }
 }
