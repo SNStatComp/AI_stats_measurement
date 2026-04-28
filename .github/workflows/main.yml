@@ -49,3 +49,10 @@ jobs:
             --namespace ${{ secrets.KUBE_NAMESPACE }} \
             --set frontend.image.tag=latest \
             --set backend.image.tag=latest
+            
+      - name: Restart deployments
+        run: |
+          kubectl rollout restart deployment/ai-stats-backend -n ${{ secrets.KUBE_NAMESPACE }}
+          kubectl rollout restart deployment/ai-stats-frontend -n ${{ secrets.KUBE_NAMESPACE }}
+          kubectl rollout status deployment/ai-stats-backend -n ${{ secrets.KUBE_NAMESPACE }}
+          kubectl rollout status deployment/ai-stats-frontend -n ${{ secrets.KUBE_NAMESPACE }}
