@@ -42,6 +42,13 @@ function Navbar() {
         >
           Login
         </Link>
+        <Link
+          to="/model-responses"
+          className={location.pathname === "/model-responses" ? "active" : ""}
+        >
+          Model Responses
+        </Link>
+
       </div>
       </div>
     </nav>

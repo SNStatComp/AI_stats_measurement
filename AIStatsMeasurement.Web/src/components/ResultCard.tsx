@@ -64,7 +64,6 @@ export function ResultCard({ item }: ResultCardProps) {
       gap: '20px'
     }}
   >
-
         <MetricCard
           title="Accuracy"
           value={item.accuracyScore.toFixed(1)}
@@ -72,7 +71,6 @@ export function ResultCard({ item }: ResultCardProps) {
           tooltip={item.accuracyScoreTooltip}
         />
         
-
         <MetricCard
           title="Findability"
           value={item.findabilityScore.toFixed(1)}
