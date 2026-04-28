@@ -47,5 +47,29 @@ namespace AI_stats_measurement.Backend.Controllers
 
             return Ok(metrics);
         }
+
+        [HttpPost("weekly")]
+        public async Task<ActionResult<MetricsOverTimeDto>> GetWeeklyMetrics([FromBody] MetricsFilterDto filter)
+        {
+            var factsQuery = _context.FactCheckResults
+                .Include(f => f.ParsedModelResponse)
+                    .ThenInclude(pmr => pmr.ParsedModelResponseSources)
+                        .ThenInclude(pmrs => pmrs.Source)
+                .Include(f => f.ParsedModelResponse)
+                    .ThenInclude(pmr => pmr.ModelResponse)
+                        .ThenInclude(mr => mr.Prompt)
+                .AsQueryable();
+
+            var facts = await factsQuery.ToListAsync();
+
+            var result = _analyticsService.GetWeeklyMetricsOverTime(
+                facts,
+                filter.Nsi,
+                filter.Llm,
+                filter.Theme
+            );
+
+            return Ok(result);
+        }
     }
 }

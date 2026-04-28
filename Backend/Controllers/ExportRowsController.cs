@@ -60,7 +60,7 @@ namespace AI_stats_measurement.Backend.Controllers
                     f.ParsedModelResponse.ModelResponse.Prompt.Theme,
                     f.ParsedModelResponse.ModelResponse.Prompt.Question,
                     f.ParsedModelResponse.ModelResponse.Prompt.Answer,
-                    f.ParsedModelResponse.ModelResponse.Prompt.Source.Name,
+                    f.ParsedModelResponse.ModelResponse.Prompt.Source.Url,
                     f.ParsedModelResponse.Answer,
                     f.ParsedModelResponse.ParsedModelResponseSources
                         .Select(s => s.Source.Id)

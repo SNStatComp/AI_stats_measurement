@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { ResultCard } from './components/ResultCard'
 import { Filters } from './components/Filters'
+import { MetricsLineChart, type ChartPoint } from './components/MetricsLineChart'
 import './Analytics.css'
 import { API_BASE_URL } from '../config'
 
@@ -33,6 +34,12 @@ export type AnalyticsResponse = {
   consistencyScoreTooltip: string
 }
 
+export type MetricsOverTime = {
+  accuracy: ChartPoint[]
+  consistency: ChartPoint[]
+  findability: ChartPoint[]
+}
+
 function Analytics() {
   const [selectedNsi, setSelectedNsi] = useState('')
   const [selectedLlm, setSelectedLlm] = useState('')
@@ -40,31 +47,53 @@ function Analytics() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
   const [results, setResults] = useState<AnalyticsResponse[]>([])
+  const [chartData, setChartData] = useState<MetricsOverTime | null>(null)
 
   const handleSend = async () => {
     setIsLoading(true)
     setError('')
+    setResults([])
+    setChartData(null)
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/metrics`, {
+      const filterBody = {
+        nsi: selectedNsi,
+        llm: selectedLlm,
+        theme: selectedTheme
+      }
+
+      const metricsResponse = await fetch(`${API_BASE_URL}/api/metrics`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({
-          nsi: selectedNsi,
-          llm: selectedLlm,
-          theme: selectedTheme
-        })
+        body: JSON.stringify(filterBody)
       })
 
-      if (!response.ok) {
-        const errorText = await response.text()
+      if (!metricsResponse.ok) {
+        const errorText = await metricsResponse.text()
         throw new Error(errorText || 'Failed to load analytics')
       }
 
-      const data: AnalyticsResponse[] = await response.json()
-      setResults(data)
+      const metricsData: AnalyticsResponse[] = await metricsResponse.json()
+
+      const weeklyResponse = await fetch(`${API_BASE_URL}/api/metrics/weekly`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(filterBody)
+      })
+
+      if (!weeklyResponse.ok) {
+        const errorText = await weeklyResponse.text()
+        throw new Error(errorText || 'Failed to load weekly analytics')
+      }
+
+      const weeklyData: MetricsOverTime = await weeklyResponse.json()
+
+      setResults(metricsData)
+      setChartData(weeklyData)
     } catch (err) {
       if (err instanceof Error) {
         setError(err.message)
@@ -78,75 +107,78 @@ function Analytics() {
 
   return (
     <div className="page-content">
-        <h1 style={{ marginBottom: '24px' }}>Analytics</h1>
+      <h1 style={{ marginBottom: '24px' }}>Analytics</h1>
 
-        <Filters
-          selectedNsi={selectedNsi}
-          selectedLlm={selectedLlm}
-          selectedTheme={selectedTheme}
-          onNsiChange={setSelectedNsi}
-          onLlmChange={setSelectedLlm}
-          onThemeChange={setSelectedTheme}
-        />
+      <Filters
+        selectedNsi={selectedNsi}
+        selectedLlm={selectedLlm}
+        selectedTheme={selectedTheme}
+        onNsiChange={setSelectedNsi}
+        onLlmChange={setSelectedLlm}
+        onThemeChange={setSelectedTheme}
+      />
 
-        <div style={{ marginBottom: '24px' }}>
-          <button
-            onClick={handleSend}
-            disabled={isLoading}
-            style={{
-              padding: '12px 20px',
-              borderRadius: '10px',
-              border: 'none',
-              background: pageTheme.primary,
-              color: '#ffffff',
-              fontSize: '14px',
-              fontWeight: 700,
-              cursor: isLoading ? 'not-allowed' : 'pointer',
-              opacity: isLoading ? 0.7 : 1
-            }}
-          >
-            {isLoading ? 'Loading...' : 'Send'}
-          </button>
-        </div>
-
-        {error && (
-          <div
-            style={{
-              marginBottom: '24px',
-              padding: '14px 16px',
-              borderRadius: '12px',
-              border: `1px solid ${pageTheme.danger}`,
-              background: pageTheme.dangerBackground,
-              color: pageTheme.danger
-            }}
-          >
-            {error}
-          </div>
-        )}
-
-        {!isLoading && !error && results.length === 0 && (
-          <div
-            style={{
-              background: pageTheme.cardBackground,
-              border: `1px solid ${pageTheme.border}`,
-              borderRadius: '16px',
-              padding: '24px',
-              color: pageTheme.mutedText
-            }}
-          >
-            No analytics loaded yet. Choose filters and press Send.
-          </div>
-        )}
-
-        {results.length > 0 && (
-          
-            <div className="results-grid">
-              {results.map((item) => (
-                <ResultCard key={item.nsi} item={item} />
-              ))}
-            </div>  
-        )}
+      <div style={{ marginBottom: '24px' }}>
+        <button
+          onClick={handleSend}
+          disabled={isLoading}
+          style={{
+            padding: '12px 20px',
+            borderRadius: '10px',
+            border: 'none',
+            background: pageTheme.primary,
+            color: '#ffffff',
+            fontSize: '14px',
+            fontWeight: 700,
+            cursor: isLoading ? 'not-allowed' : 'pointer',
+            opacity: isLoading ? 0.7 : 1
+          }}
+        >
+          {isLoading ? 'Loading...' : 'Send'}
+        </button>
       </div>
+
+      {error && (
+        <div
+          style={{
+            marginBottom: '24px',
+            padding: '14px 16px',
+            borderRadius: '12px',
+            border: `1px solid ${pageTheme.danger}`,
+            background: pageTheme.dangerBackground,
+            color: pageTheme.danger
+          }}
+        >
+          {error}
+        </div>
+      )}
+
+      {!isLoading && !error && results.length === 0 && (
+        <div
+          style={{
+            background: pageTheme.cardBackground,
+            border: `1px solid ${pageTheme.border}`,
+            borderRadius: '16px',
+            padding: '24px',
+            color: pageTheme.mutedText
+          }}
+        >
+          No analytics loaded yet. Choose filters and press Send.
+        </div>
+      )}
+
+      {chartData && (
+        <MetricsLineChart data={chartData} />
+      )}
+
+      {results.length > 0 && (
+        <div className="results-grid">
+          {results.map((item) => (
+            <ResultCard key={item.nsi} item={item} />
+          ))}
+        </div>
+      )}
+    </div>
   )
 }
 
