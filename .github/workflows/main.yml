@@ -1,0 +1,51 @@
+name: Deploy Helm Chart
+
+on:
+  workflow_run:
+    workflows: ["Build and Push Docker Images"]
+    types:
+      - completed
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install kubectl
+        uses: azure/setup-kubectl@v4
+
+      - name: Install Helm
+        uses: azure/setup-helm@v4
+
+      - name: Configure Kubernetes access
+        run: |
+          kubectl config set-cluster sspcloud \
+            --server=${{ secrets.KUBE_SERVER }} \
+            --insecure-skip-tls-verify=true
+
+          kubectl config set-credentials github-actions \
+            --token=${{ secrets.KUBE_TOKEN }}
+
+          kubectl config set-context sspcloud \
+            --cluster=sspcloud \
+            --user=github-actions \
+            --namespace=${{ secrets.KUBE_NAMESPACE }}
+
+          kubectl config use-context sspcloud
+
+      - name: Test Kubernetes access
+        run: |
+          kubectl auth can-i get pods -n ${{ secrets.KUBE_NAMESPACE }}
+          kubectl get pods -n ${{ secrets.KUBE_NAMESPACE }}
+
+      - name: Deploy with Helm
+        run: |
+          helm upgrade --install ai-stats ./ai-stats-measurement-chart \
+            --namespace ${{ secrets.KUBE_NAMESPACE }} \
+            --set frontend.image.tag=latest \
+            --set backend.image.tag=latest
