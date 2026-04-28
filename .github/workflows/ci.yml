@@ -41,7 +41,7 @@ jobs:
         id: build_frontend
         uses: docker/build-push-action@v5
         with:
-          context: ./AIStatsMeasurement.Web
+          context: .
           file: ./AIStatsMeasurement.Web/Dockerfile
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta_frontend.outputs.tags }}
@@ -81,7 +81,7 @@ jobs:
         id: build_backend
         uses: docker/build-push-action@v5
         with:
-          context: ./Backend
+          context: .
           file: ./Backend/Dockerfile
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta_backend.outputs.tags }}
