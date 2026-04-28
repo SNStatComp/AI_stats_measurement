@@ -67,6 +67,17 @@ export function MetricsLineChart({ data }: Props) {
   const chartData = mergeChartData(data)
 
   return (
+    <>  
+    <h3
+        style={{
+        marginTop: '24px',
+        marginBottom: '12px',
+        color: '#ffffff'
+        }}
+    >
+        Metrics over time
+    </h3>
+
     <div
       style={{
         background: '#ffffff',
@@ -77,7 +88,7 @@ export function MetricsLineChart({ data }: Props) {
         overflow: 'hidden'
       }}
     >
-      <h2 style={{ marginBottom: '16px' }}>Metrics over time</h2>
+      <h3 style={{ color: '#ffffff', marginTop: 0, marginBottom: 14 }}>Metrics over time</h3>
 
       <ResponsiveContainer width="100%" height={320}>
         <LineChart
@@ -100,5 +111,6 @@ export function MetricsLineChart({ data }: Props) {
         </LineChart>
         </ResponsiveContainer>
     </div>
+    </>
   )
 }

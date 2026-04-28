@@ -30,7 +30,6 @@ export function ResultCard({ item, chartData }: ResultCardProps) {
         borderRadius: '24px',
         background: theme.color,
         boxShadow: '0 10px 30px rgba(15, 23, 42, 0.08)',
-        overflow: 'hidden'
       }}
     >
   <div
