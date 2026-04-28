@@ -83,3 +83,16 @@ kubectl rollout restart deployment ai-stats-backend -n user-diegoespinosa
 kubectl rollout restart deployment ai-stats-frontend -n user-diegoespinosa
 ```
 
+## Pause
+```bash
+kubectl scale deployment ai-stats-backend --replicas=0 -n user-diegoespinosa
+kubectl scale deployment ai-stats-frontend --replicas=0 -n user-diegoespinosa
+kubectl scale statefulset ai-stats-postgres --replicas=0 -n user-diegoespinosa
+```
+
+## Resume
+```bash
+kubectl scale statefulset ai-stats-postgres --replicas=1 -n user-diegoespinosa
+kubectl scale deployment ai-stats-backend --replicas=1 -n user-diegoespinosa
+kubectl scale deployment ai-stats-frontend --replicas=1 -n user-diegoespinosa
+```
