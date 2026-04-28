@@ -49,20 +49,18 @@ namespace AI_stats_measurement.Backend.Controllers
         }
 
         [HttpPost("weekly")]
-        public async Task<ActionResult<MetricsOverTimeDto>> GetWeeklyMetrics([FromBody] MetricsFilterDto filter)
+        public async Task<ActionResult<Dictionary<string, MetricsOverTimeDto>>> GetWeeklyMetrics([FromBody] MetricsFilterDto filter)
         {
-            var factsQuery = _context.FactCheckResults
+            var facts = await _context.FactCheckResults
                 .Include(f => f.ParsedModelResponse)
                     .ThenInclude(pmr => pmr.ParsedModelResponseSources)
-                        .ThenInclude(pmrs => pmrs.Source)
+                        .ThenInclude(s => s.Source)
                 .Include(f => f.ParsedModelResponse)
                     .ThenInclude(pmr => pmr.ModelResponse)
                         .ThenInclude(mr => mr.Prompt)
-                .AsQueryable();
+                .ToListAsync();
 
-            var facts = await factsQuery.ToListAsync();
-
-            var result = _analyticsService.GetWeeklyMetricsOverTime(
+            var result = _analyticsService.GetWeeklyMetricsPerNsi(
                 facts,
                 filter.Nsi,
                 filter.Llm,
