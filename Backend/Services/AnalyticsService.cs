@@ -388,45 +388,52 @@ namespace AI_stats_measurement.Backend.Services
             return provider.StartsWith(llmGroup, StringComparison.OrdinalIgnoreCase);
         }
 
-        public MetricsOverTimeDto GetWeeklyMetricsOverTime(
-            List<FactCheckResult> results,
-            string? nsi,
-            string? llm,
-            string? theme)
+        public Dictionary<string, MetricsOverTimeDto> GetWeeklyMetricsPerNsi(
+    List<FactCheckResult> results,
+    string? nsi,
+    string? llm,
+    string? theme)
         {
             var filtered = ApplyFilters(results, nsi, llm, theme);
 
-            var weeklyGroups = filtered
-                .GroupBy(r =>
-                {
-                    var date = r.ParsedModelResponse.ModelResponse.CreatedUtc.Date;
-                    var diff = ((int)date.DayOfWeek + 6) % 7;
-                    var monday = date.AddDays(-diff);
-                    return monday;
-                })
-                .OrderBy(g => g.Key)
-                .ToList();
+            return filtered
+                .GroupBy(r => r.ParsedModelResponse.ModelResponse.Prompt.Provider)
+                .ToDictionary(
+                    g => g.Key,
+                    g =>
+                    {
+                        var weekly = g
+                            .GroupBy(r =>
+                            {
+                                var date = r.ParsedModelResponse.ModelResponse.CreatedUtc.Date;
+                                var diff = ((int)date.DayOfWeek + 6) % 7;
+                                return date.AddDays(-diff);
+                            })
+                            .OrderBy(x => x.Key)
+                            .ToList();
 
-            return new MetricsOverTimeDto
-            {
-                Accuracy = weeklyGroups.Select(g => new ChartPointDto
-                {
-                    Label = g.Key.ToString("yyyy-MM-dd"),
-                    Value = ComputeAccuracyMetric(g.ToList()).Score
-                }).ToList(),
+                        return new MetricsOverTimeDto
+                        {
+                            Accuracy = weekly.Select(w => new ChartPointDto
+                            {
+                                Label = w.Key.ToString("yyyy-MM-dd"),
+                                Value = ComputeAccuracyMetric(w.ToList()).Score
+                            }).ToList(),
 
-                Consistency = weeklyGroups.Select(g => new ChartPointDto
-                {
-                    Label = g.Key.ToString("yyyy-MM-dd"),
-                    Value = ComputeConsistencyMetric(g.ToList()).Score
-                }).ToList(),
+                            Consistency = weekly.Select(w => new ChartPointDto
+                            {
+                                Label = w.Key.ToString("yyyy-MM-dd"),
+                                Value = ComputeConsistencyMetric(w.ToList()).Score
+                            }).ToList(),
 
-                Findability = weeklyGroups.Select(g => new ChartPointDto
-                {
-                    Label = g.Key.ToString("yyyy-MM-dd"),
-                    Value = ComputeFindabilityMetric(g.ToList()).Score
-                }).ToList()
-            };
+                            Findability = weekly.Select(w => new ChartPointDto
+                            {
+                                Label = w.Key.ToString("yyyy-MM-dd"),
+                                Value = ComputeFindabilityMetric(w.ToList()).Score
+                            }).ToList()
+                        };
+                    }
+                );
         }
 
 

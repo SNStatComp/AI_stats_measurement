@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { ResultCard } from './components/ResultCard'
 import { Filters } from './components/Filters'
-import { MetricsLineChart, type ChartPoint } from './components/MetricsLineChart'
+import { type ChartPoint } from './components/MetricsLineChart'
 import './Analytics.css'
 import { API_BASE_URL } from '../config'
 
@@ -40,6 +40,8 @@ export type MetricsOverTime = {
   findability: ChartPoint[]
 }
 
+type MetricsPerNsi = Record<string, MetricsOverTime>
+
 function Analytics() {
   const [selectedNsi, setSelectedNsi] = useState('')
   const [selectedLlm, setSelectedLlm] = useState('')
@@ -47,13 +49,13 @@ function Analytics() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
   const [results, setResults] = useState<AnalyticsResponse[]>([])
-  const [chartData, setChartData] = useState<MetricsOverTime | null>(null)
+  const [chartData, setChartData] = useState<MetricsPerNsi>({})
 
   const handleSend = async () => {
     setIsLoading(true)
     setError('')
     setResults([])
-    setChartData(null)
+    setChartData({})
 
     try {
       const filterBody = {
@@ -90,10 +92,10 @@ function Analytics() {
         throw new Error(errorText || 'Failed to load weekly analytics')
       }
 
-      const weeklyData: MetricsOverTime = await weeklyResponse.json()
+      const weeklyData: MetricsPerNsi = await weeklyResponse.json()
+      setChartData(weeklyData)
 
       setResults(metricsData)
-      setChartData(weeklyData)
     } catch (err) {
       if (err instanceof Error) {
         setError(err.message)
@@ -167,15 +169,15 @@ function Analytics() {
         </div>
       )}
 
-      {chartData && (
-        <MetricsLineChart data={chartData} />
-      )}
-
       {results.length > 0 && (
         <div className="results-grid">
           {results.map((item) => (
-            <ResultCard key={item.nsi} item={item} />
-          ))}
+          <ResultCard
+            key={item.nsi}
+            item={item}
+            chartData={chartData[item.nsi]}
+          />
+        ))}
         </div>
       )}
     </div>

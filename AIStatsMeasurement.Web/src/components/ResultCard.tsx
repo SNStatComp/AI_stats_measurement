@@ -1,10 +1,12 @@
-import type { AnalyticsResponse } from '../Analytics'
+import type { AnalyticsResponse, MetricsOverTime } from '../Analytics'
 import { MetricCard } from './MetricCard'
 import { TopSources } from './TopSources'
 import { getResultTheme } from '../utils/getResultTheme'
 import cbsLogo from '../assets/cbs.png'
 import oecdLogo from '../assets/oecd.png'
 import statbankLogo from '../assets/StatBank Denmark.svg'
+import { MetricsLineChart } from './MetricsLineChart'
+  
 
 const logos: Record<string, string> = {
   CBS: cbsLogo,
@@ -14,9 +16,10 @@ const logos: Record<string, string> = {
 
 type ResultCardProps = {
   item: AnalyticsResponse
+  chartData?: MetricsOverTime
 }
 
-export function ResultCard({ item }: ResultCardProps) {
+export function ResultCard({ item, chartData }: ResultCardProps) {
   const theme = getResultTheme(item.nsi)
 
   return (
@@ -94,6 +97,12 @@ export function ResultCard({ item }: ResultCardProps) {
       </div>
 
       <TopSources sources={item.topSources} color="white" />
+
+      {chartData && (
+        <div style={{ marginTop: '20px' }}>
+          <MetricsLineChart data={chartData} />
+        </div>
+      )}
     </div>
   )
 }
