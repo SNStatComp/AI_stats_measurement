@@ -29,7 +29,8 @@ export function ResultCard({ item, chartData }: ResultCardProps) {
         padding: '32px 24px 24px',
         borderRadius: '24px',
         background: theme.color,
-        boxShadow: '0 10px 30px rgba(15, 23, 42, 0.08)'
+        boxShadow: '0 10px 30px rgba(15, 23, 42, 0.08)',
+        overflow: 'hidden'
       }}
     >
   <div

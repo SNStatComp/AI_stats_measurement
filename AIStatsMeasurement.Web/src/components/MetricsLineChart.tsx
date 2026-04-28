@@ -5,7 +5,8 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  Legend
+  Legend,
+  ResponsiveContainer
 } from 'recharts'
 
 export type ChartPoint = {
@@ -72,52 +73,32 @@ export function MetricsLineChart({ data }: Props) {
         border: '1px solid #e2e8f0',
         borderRadius: '16px',
         padding: '24px',
-        marginBottom: '24px'
+        marginBottom: '24px',
+        overflow: 'hidden'
       }}
     >
-      <h2 style={{ marginBottom: '16px' }}>Scores over time</h2>
+      <h2 style={{ marginBottom: '16px' }}>Metrics over time</h2>
 
-      <LineChart
-        width={900}
-        height={360}
-        data={chartData}
-        margin={{
-          top: 10,
-          right: 30,
-          left: 0,
-          bottom: 10
-        }}
-      >
-        <CartesianGrid strokeDasharray="3 3" />
-        <XAxis dataKey="label" />
-        <YAxis domain={[0, 10]} />
-        <Tooltip />
-        <Legend />
-
-        <Line
-          type="monotone"
-          dataKey="accuracy"
-          name="Accuracy"
-          stroke="#2563eb"
-          activeDot={{ r: 8 }}
-        />
-
-        <Line
-          type="monotone"
-          dataKey="consistency"
-          name="Consistency"
-          stroke="#16a34a"
-          activeDot={{ r: 8 }}
-        />
-
-        <Line
-          type="monotone"
-          dataKey="findability"
-          name="Findability"
-          stroke="#dc2626"
-          activeDot={{ r: 8 }}
-        />
-      </LineChart>
+      <ResponsiveContainer width="100%" height={320}>
+        <LineChart
+            data={chartData}
+            margin={{
+            top: 10,
+            right: 20,
+            left: 0,
+            bottom: 10
+            }}
+        >
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="label" tick={{ fontSize: 12 }} />
+            <YAxis domain={[0, 10]} width={30} />
+            <Tooltip />
+            <Legend />
+            <Line type="monotone" dataKey="accuracy" name="Accuracy" stroke="#2563eb" />
+            <Line type="monotone" dataKey="consistency" name="Consistency" stroke="#16a34a" />
+            <Line type="monotone" dataKey="findability" name="Findability" stroke="#dc2626" />
+        </LineChart>
+        </ResponsiveContainer>
     </div>
   )
 }
