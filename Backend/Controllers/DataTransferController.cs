@@ -18,6 +18,124 @@ namespace AI_stats_measurement.Backend.Controllers
             _context = context;
         }
 
+        [HttpGet("export/all")]
+        public async Task<ActionResult<DataExportBundleDto>> ExportAll()
+        {
+            var sources = await _context.Sources
+                .AsNoTracking()
+                .OrderBy(x => x.Id)
+                .Select(x => new SourceTransferDto
+                {
+                    Id = x.Id,
+                    Name = x.Name,
+                    Url = x.Url,
+                    Type = x.Type
+                })
+                .ToListAsync();
+
+            var promptEntities = await _context.Prompts
+                .AsNoTracking()
+                .Include(x => x.Source)
+                .Include(x => x.Dimensions)
+                .OrderBy(x => x.Id)
+                .ToListAsync();
+
+            var prompts = promptEntities
+                .Select(x => new PromptTransferDto
+                {
+                    Id = x.Id,
+                    Provider = x.Provider,
+                    Instruction = x.Instruction,
+                    Theme = x.Theme,
+                    Periode = x.Periode,
+                    Subject = x.Subject,
+                    Question = x.Question,
+                    Answer = x.Answer,
+                    SourceId = x.SourceId,
+                    SourceName = x.Source?.Name ?? "",
+                    SourceType = x.Source?.Type ?? "",
+                    SourceUrl = x.Source?.Url ?? "",
+                    AnswerLocation = x.AnswerLocation,
+                    Dimensions = x.Dimensions.ToDictionary(d => d.Name, d => d.Value),
+                    CreatedUtc = x.CreatedUtc
+                })
+                .ToList();
+
+            var promptDimensions = await _context.Set<PromptDimension>()
+                .AsNoTracking()
+                .OrderBy(x => x.Id)
+                .Select(x => new PromptDimensionTransferDto
+                {
+                    Id = x.Id,
+                    PromptId = x.PromptId,
+                    Name = x.Name,
+                    Value = x.Value
+                })
+                .ToListAsync();
+
+            var modelResponses = await _context.Set<ModelResponse>()
+                .AsNoTracking()
+                .OrderBy(x => x.Id)
+                .Select(x => new ModelResponseTransferDto
+                {
+                    Id = x.Id,
+                    PromptId = x.PromptId,
+                    Provider = x.Provider,
+                    RawText = x.RawText,
+                    Exception = x.Exception,
+                    CreatedUtc = x.CreatedUtc
+                })
+                .ToListAsync();
+
+            var parsedResponses = await _context.Set<ParsedModelResponse>()
+                .AsNoTracking()
+                .OrderBy(x => x.Id)
+                .Select(x => new ParsedModelResponseTransferDto
+                {
+                    Id = x.Id,
+                    ModelResponseId = x.ModelResponseId,
+                    Answer = x.Answer
+                })
+                .ToListAsync();
+
+            var factChecks = await _context.Set<FactCheckResult>()
+                .AsNoTracking()
+                .OrderBy(x => x.Id)
+                .Select(x => new FactCheckResultTransferDto
+                {
+                    Id = x.Id,
+                    ParsedModelResponseId = x.ParsedModelResponseId,
+                    AbsoluteError = x.AbsoluteError,
+                    RelativeError = x.RelativeError,
+                    AnswerIsCorrect = x.AnswerIsCorrect,
+                    SourceIsCorrect = x.SourceIsCorrect,
+                    Abstained = x.Abstained
+                })
+                .ToListAsync();
+
+            var parsedSources = await _context.Set<ParsedModelResponseSource>()
+                .AsNoTracking()
+                .Select(x => new ParsedModelResponseSourceTransferDto
+                {
+                    ParsedModelResponseId = x.ParsedModelResponseId,
+                    SourceId = x.SourceId
+                })
+                .ToListAsync();
+
+            var bundle = new DataExportAllBundleDto
+            {
+                Sources = sources,
+                Prompts = prompts,
+                PromptDimensions = promptDimensions,
+                ModelResponses = modelResponses,
+                ParsedModelResponses = parsedResponses,
+                FactCheckResults = factChecks,
+                ParsedModelResponseSources = parsedSources
+            };
+
+            return Ok(bundle);
+        }
+
         [HttpGet("export")]
         public async Task<ActionResult<DataExportBundleDto>> Export()
         {
