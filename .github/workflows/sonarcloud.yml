@@ -2,14 +2,12 @@ name: Build, Test and SonarCloud
 
 on:
   push:
-    branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
+    branches:
+      - main
   workflow_dispatch:
 
 permissions:
   contents: read
-  pull-requests: read
 
 jobs:
   sonar:
@@ -41,7 +39,7 @@ jobs:
             /o:"snstatcomp" \
             /d:sonar.token="${SONAR_TOKEN}" \
             /d:sonar.host.url="https://sonarcloud.io" \
-            /d:sonar.cs.opencover.reportsPaths="**/Coverage/coverage.opencover.xml"
+            /d:sonar.cs.opencover.reportsPaths="**/coverage.opencover.xml"
 
       - name: Build
         run: dotnet build AI_stats_measurement.sln --no-restore --configuration Release
@@ -49,7 +47,6 @@ jobs:
       - name: Test with coverage
         run: |
           dotnet test AI_stats_measurement.sln \
-            --no-build \
             --configuration Release \
             /p:CollectCoverage=true \
             /p:CoverletOutputFormat=opencover \
