@@ -197,9 +197,9 @@ public class ModelResponseParserTests
     }
 
     [Fact]
-    public void Parse_Returns_1()
+    public void Parse_Returns_Zero_Ignore_Source()
     {
-        var text = "Bron: [CBS - Arbeidsongeschiktheidsuitkeringen] (https://www.cbs.nl/nl-nl/cijfers/detail/arbeidsongeschiktheidsuitkeringen)";
+        var text = "Bron: [CBS - Arbeidsongeschiktheidsuitkeringen] (https://www.cbs.nl/nl-nl/cijfers/86165NED/detail/arbeidsongeschiktheidsuitkeringen)";
 
         var parsed = ModelResponseParser.ParseDutch(0, text);
 
@@ -207,7 +207,7 @@ public class ModelResponseParserTests
     }
 
     [Fact]
-    public void Parse_Returns_2()
+    public void Parse_Returns_Answer_Ignore_Year()
     {
         var text = "**De levensverwachting bij geboorte voor mannen in Nederland in 2022 was 80,1 jaar.**[[1]] (https://www.lifetable.de/File/GetDocument/data/NLD/NLD000020222022CU1.pdf)\r\n\r\nDit cijfer komt uit de officiële sterftetafels(levensverwachtingstafels) van het **Centraal Bureau voor de Statistiek(CBS)**. Ter vergelijking: in 2020 was het circa 79,7 jaar(daling door COVID-19), in 2024 circa 80,5 jaar.[[2]] (https://www.cbs.nl/?sc_itemid=40d28916-85d7-494e-84d6-9d97ca41e253&sc_lang=nl-%20nl)\r\n\r\n**Bron:** CBS, tabel 37360ned(Levensverwachting; geslacht, leeftijd).  \r\nDirecte link: [https://www.cbs.nl/nl-nl/cijfers/detail/37360ned](https://www.cbs.nl/nl-nl/cijfers/detail/37360ned) of de StatLine-tabel op opendata.cbs.nl.";
 
@@ -217,7 +217,7 @@ public class ModelResponseParserTests
     }
 
     [Fact]
-    public void Parse_Returns_3()
+    public void Parse_Returns_Answer_Recognize_Ton()
     {
         var text = "30.300 ton";
 
@@ -227,7 +227,7 @@ public class ModelResponseParserTests
     } 
     
     [Fact]
-    public void Parse_Returns_4()
+    public void Parse_Returns_Zero_Ignore_Dates()
     {
         var text = "1 januari 2021";
 
@@ -237,7 +237,7 @@ public class ModelResponseParserTests
     }
 
     [Fact]
-    public void Parse_Returns_5()
+    public void Parse_Returns_Zero_Ignore_Age_Range_English()
     {
         var text = "aged 25 to 29 ";
 
@@ -247,7 +247,7 @@ public class ModelResponseParserTests
     }
 
     [Fact]
-    public void Parse_Returns_6()
+    public void Parse_Returns_Zero_Ignore_Age_Range_Dutch()
     {
         var text = "18 tot 25 jaar";
 
@@ -257,7 +257,7 @@ public class ModelResponseParserTests
     }
 
     [Fact]
-    public void Parse_Returns_7()
+    public void Parse_Returns_Zero_Ignore_Base_Year()
     {
         var text = "(base year 2025=100)";
 
@@ -265,8 +265,4 @@ public class ModelResponseParserTests
 
         Assert.Equal(0, parsed.Answer);
     }
-
-
-   
-
 }
