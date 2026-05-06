@@ -24,7 +24,7 @@ jobs:
         with:
           dotnet-version: 9.0.x
 
-      - name: Install SonarScanner for .NET
+      - name: Install SonarScanner
         run: dotnet tool install --global dotnet-sonarscanner
 
       - name: Restore
@@ -39,22 +39,27 @@ jobs:
             /o:"snstatcomp" \
             /d:sonar.token="${SONAR_TOKEN}" \
             /d:sonar.host.url="https://sonarcloud.io" \
-            /d:sonar.cs.opencover.reportsPaths="**/coverage.opencover.xml" \
-            /d:sonar.exclusions="AIStatsMeasurement.Web/**"
+            /d:sonar.cs.opencover.reportsPaths="TestResults/coverage.opencover.xml" \
+            /d:sonar.exclusions="AIStatsMeasurement.Web/**" \
+            /d:sonar.coverage.exclusions="Tests/**"
 
       - name: Build
         run: dotnet build AI_stats_measurement.sln --no-restore --configuration Release
 
       - name: Test with coverage
         run: |
+          mkdir -p TestResults
           dotnet test AI_stats_measurement.sln \
             --configuration Release \
+            --no-build \
             /p:CollectCoverage=true \
             /p:CoverletOutputFormat=opencover \
-            /p:CoverletOutput=./Coverage/
+            /p:CoverletOutput=../TestResults/coverage
 
-      - name: List coverage files
-        run: find . -name "coverage.opencover.xml"
+      - name: Check coverage file
+        run: |
+          ls -la TestResults
+          cat TestResults/coverage.opencover.xml | head
 
       - name: End SonarCloud analysis
         env:
