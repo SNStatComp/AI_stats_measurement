@@ -384,15 +384,15 @@ namespace AI_stats_measurement.Backend.Services
                     || provider.StartsWith("grok-4.20-reasoning", StringComparison.OrdinalIgnoreCase);
             }
 
-            // fallback (normal filtering)
+            // fallback
             return provider.StartsWith(llmGroup, StringComparison.OrdinalIgnoreCase);
         }
 
         public Dictionary<string, MetricsOverTimeDto> GetWeeklyMetricsPerNsi(
-    List<FactCheckResult> results,
-    string? nsi,
-    string? llm,
-    string? theme)
+            List<FactCheckResult> results,
+            string? nsi,
+            string? llm,
+            string? theme)
         {
             var filtered = ApplyFilters(results, nsi, llm, theme);
 
@@ -435,8 +435,6 @@ namespace AI_stats_measurement.Backend.Services
                     }
                 );
         }
-
-
 
         public class MetricResultDto
         {
