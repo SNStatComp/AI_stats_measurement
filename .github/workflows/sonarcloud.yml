@@ -40,8 +40,7 @@ jobs:
             /d:sonar.token="${SONAR_TOKEN}" \
             /d:sonar.host.url="https://sonarcloud.io" \
             /d:sonar.cs.opencover.reportsPaths="TestResults/coverage.opencover.xml" \
-            /d:sonar.exclusions="AIStatsMeasurement.Web/**" \
-            /d:sonar.coverage.exclusions="Tests/**"
+            /d:sonar.coverage.exclusions="Tests/**,Backend/Migrations/**,AIStatsMeasurement.Web/**"
 
       - name: Build
         run: dotnet build AI_stats_measurement.sln --no-restore --configuration Release
