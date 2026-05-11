@@ -25,7 +25,8 @@ namespace AI_stats_measurement.Backend.Services.Parsing
             var matches = Regex.Matches(
                 text,
                 @"(\d{1,3}(?:[.\s]\d{3})*(?:,\d+)?)\s*(miljoen|duizend|miljard|ton)?",
-                RegexOptions.IgnoreCase);
+                RegexOptions.IgnoreCase,
+                TimeSpan.FromMilliseconds(100));
 
             foreach (Match match in matches)
             {

@@ -16,12 +16,13 @@ public static class ModelResponseParser
 {
     private static readonly Regex MarkdownLinkRegex =
         new(@"\[([^\]]+)\]\(((https?:\/\/)?([a-z0-9\-]+\.)+[a-z]{2,}[^\s\)]*)\)",
-            RegexOptions.IgnoreCase | RegexOptions.Compiled);
+            RegexOptions.IgnoreCase | RegexOptions.Compiled,
+            TimeSpan.FromMilliseconds(100));
 
     private static readonly Regex UrlRegex =
         new(@"(https?:\/\/)?([a-z0-9\-]+\.)+[a-z]{2,}(\/[^\s\)\]]*)?",
-            RegexOptions.IgnoreCase | RegexOptions.Compiled);
-
+            RegexOptions.IgnoreCase | RegexOptions.Compiled,
+            TimeSpan.FromMilliseconds(100));
     public static ParsedModelResponse ParseDutch(int responseId, string? rawText)
         => Parse(responseId, rawText, ParserLanguage.Dutch);
 

@@ -1,0 +1,10 @@
+﻿bin
+obj
+.git
+.vs
+.vscode
+
+appsettings.Development.json
+
+TestResults
+coverage
