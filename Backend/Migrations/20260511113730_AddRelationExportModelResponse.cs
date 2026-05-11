@@ -21,8 +21,7 @@ namespace AI_stats_measurement.Backend.Migrations
                 name: "ModelResponseId",
                 table: "ExportRows",
                 type: "integer",
-                nullable: false,
-                defaultValue: 0);
+                nullable: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_ModelResponses_JobId",
@@ -40,7 +39,7 @@ namespace AI_stats_measurement.Backend.Migrations
                 column: "ModelResponseId",
                 principalTable: "ModelResponses",
                 principalColumn: "Id",
-                onDelete: ReferentialAction.Cascade);
+                onDelete: ReferentialAction.SetNull);
 
             migrationBuilder.AddForeignKey(
                 name: "FK_ModelResponses_LlmJobs_JobId",
