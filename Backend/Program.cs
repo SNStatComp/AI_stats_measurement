@@ -93,6 +93,8 @@ builder.Services.AddScoped<SourceNormalizer>();
 
 builder.Services.AddScoped<EvaluationPipeline>();
 
+builder.Services.AddScoped<IDataTransferService, DataTransferService>();
+
 var app = builder.Build();
 
 using (var scope = app.Services.CreateScope())
