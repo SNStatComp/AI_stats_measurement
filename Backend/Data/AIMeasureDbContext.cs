@@ -20,6 +20,7 @@ public class AIMeasureDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<Source> Sources => Set<Source>();  
     public DbSet<ParsedModelResponseSource> ParsedModelResponseSources => Set<ParsedModelResponseSource>();
     public DbSet<ExportRow> ExportRows => Set<ExportRow>();
+    public DbSet<LlmJob> LlmJobs => Set<LlmJob>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
