@@ -207,36 +207,48 @@ function RunMultiplePrompts() {
       .catch(() => console.log('Failed loading prompts by NSI'))
   }, [selectedNsi, selectedTheme, prompts])
 
-  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
+  const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
-    if (!selectedPromptIds.length || isLoading) return
+const chunkArray = <T,>(items: T[], size: number): T[][] => {
+  const chunks: T[][] = []
 
-    if (!selectedPromptIds.length) {
-    alert('Select at least one prompt')
-    return
+  for (let i = 0; i < items.length; i += size) {
+    chunks.push(items.slice(i, i + size))
   }
+
+  return chunks
+}
+
+const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
+  e.preventDefault()
+
+  if (!selectedPromptIds.length || isLoading) return
 
   if (!selectedModels.length) {
     alert('Select at least one model')
     return
   }
 
-    setIsLoading(true)
-    setError('')
-    setResults([])
+  setIsLoading(true)
+  setError('')
+  setResults([])
 
-    try {
-    const response = await apiFetch(`${API_BASE_URL}/api/llm/run`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        promptIds: selectedPromptIds,
-        modelNames: selectedModels
+  const batches = chunkArray(selectedPromptIds, 25)
+
+  try {
+    for (let i = 0; i < batches.length; i++) {
+      const batch = batches[i]
+
+      const response = await apiFetch(`${API_BASE_URL}/api/llm/run`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          promptIds: batch,
+          modelNames: selectedModels
+        })
       })
-    })
 
       if (!response.ok) {
         const errorText = await response.text()
@@ -259,17 +271,23 @@ function RunMultiplePrompts() {
           .filter((source): source is SourceDto => Boolean(source))
       }))
 
-      setResults(enrichedResults)
-    } catch (err) {
-      if (err instanceof Error) {
-        setError(err.message)
-      } else {
-        setError('Something went wrong.')
+      setResults((prev) => [...prev, ...enrichedResults])
+
+      if (i < batches.length - 1) {
+        await sleep(60_000)
       }
-    } finally {
-      setIsLoading(false)
     }
+  } catch (err) {
+    if (err instanceof Error) {
+      setError(err.message)
+    } else {
+      setError('Something went wrong.')
+    }
+  } finally {
+    setIsLoading(false)
   }
+}
+  
 
   return (
     <div className="app-container">
@@ -380,7 +398,7 @@ function RunMultiplePrompts() {
       disabled={!selectedPromptIds.length || !selectedModels.length || isLoading}
       className="run-button"
     >
-      {isLoading ? 'Running all matching prompts...' : 'Run All Matching Prompts'}
+      {isLoading ? 'Running prompts in batches...' : 'Run All Matching Prompts'}
     </button>
   </form>
 
