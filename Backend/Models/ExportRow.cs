@@ -9,8 +9,8 @@ namespace AI_stats_measurement.Backend.Models
     {
         public int Id { get; private set; }
 
-        public int ModelResponseId { get; internal set; }
-        public ModelResponse ModelResponse { get; private set; } = null!;
+        public int? ModelResponseId { get; internal set; }
+        public ModelResponse? ModelResponse { get; private set; }
 
         public string Theme { get; private set; } = null!;
         public string Question { get; private set; } = null!;
