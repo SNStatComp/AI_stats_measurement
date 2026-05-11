@@ -311,7 +311,8 @@ namespace AI_stats_measurement.Backend.Services
                     var datasetMatch = System.Text.RegularExpressions.Regex.Match(
                         fragment,
                         @"dataset\/([A-Za-z0-9_]+)",
-                        System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+                        System.Text.RegularExpressions.RegexOptions.IgnoreCase,
+                        TimeSpan.FromMilliseconds(100));
 
                     if (datasetMatch.Success)
                     {
@@ -321,7 +322,8 @@ namespace AI_stats_measurement.Backend.Services
                     var tidMatch = System.Text.RegularExpressions.Regex.Match(
                         fragment,
                         @"tid=([A-Za-z0-9_]+)",
-                        System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+                        System.Text.RegularExpressions.RegexOptions.IgnoreCase,
+                        TimeSpan.FromMilliseconds(100));
 
                     if (tidMatch.Success)
                     {
@@ -351,7 +353,8 @@ namespace AI_stats_measurement.Backend.Services
                 var match = System.Text.RegularExpressions.Regex.Match(
                     query,
                     @"df\[id\]=([^&]+)",
-                    System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+                    System.Text.RegularExpressions.RegexOptions.IgnoreCase,
+                    TimeSpan.FromMilliseconds(100));
 
                 if (match.Success)
                 {
