@@ -87,7 +87,17 @@ public class AIMeasureDbContext : IdentityDbContext<ApplicationUser>
             .HasForeignKey(x => x.SourceId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        modelBuilder.Entity<ExportRow>();
+        modelBuilder.Entity<LlmJob>()
+            .HasMany(j => j.ModelResponses)
+            .WithOne(r => r.Job)
+            .HasForeignKey(r => r.JobId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        modelBuilder.Entity<ExportRow>()
+            .HasOne(er => er.ModelResponse)
+            .WithMany()
+            .HasForeignKey(er => er.ModelResponseId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }
 

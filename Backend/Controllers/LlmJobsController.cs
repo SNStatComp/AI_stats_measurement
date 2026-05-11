@@ -43,8 +43,15 @@ namespace AI_stats_measurement.Backend.Controllers
             if (job.Status != "Completed")
                 return BadRequest("Job is not completed yet.");
 
+            var modelResponseIds = await _context.ModelResponses
+                .Where(r => r.JobId == jobId)
+                .Select(r => r.Id)
+                .ToListAsync(ct);
+
             var rows = await _context.ExportRows
-                .OrderByDescending(r => r.CreatedUtc)
+                .Where(r => modelResponseIds.Contains(r.ModelResponseId))
+                .OrderBy(r => r.Question)
+                .ThenBy(r => r.Provider)
                 .ToListAsync(ct);
 
             return Ok(rows);

@@ -16,20 +16,20 @@ namespace AI_stats_measurement.Services
             _context = context;
         }
 
-        private async Task<ModelResponse> AskSingleAsync(ILlmQuerier q,Prompt prompt, CancellationToken ct)
-        {
+        private async Task<ModelResponse> AskSingleAsync(ILlmQuerier q, Prompt prompt, Guid jobId, CancellationToken ct) 
+        { 
             try
             {
                 var text = await q.AskAsync(prompt, ct);
-                return new ModelResponse(prompt.Id, q.Name, text, null);
+                return new ModelResponse(prompt.Id, q.Name, text, null, jobId);
             }
             catch (Exception ex)
             {
-                return new ModelResponse(prompt.Id, q.Name, null, ex.Message);
+                return new ModelResponse(prompt.Id, q.Name, null, ex.Message, jobId);
             }
         }
 
-        public async Task<List<ModelResponse>> AskByPromptIdsAsync(List<int> promptIds, List<string> modelNames, CancellationToken ct)
+        public async Task<List<ModelResponse>> AskByPromptIdsAsync(List<int> promptIds, List<string> modelNames, Guid jobId, CancellationToken ct)
         {
             var tasks = new List<Task<ModelResponse>>();
 
@@ -49,7 +49,7 @@ namespace AI_stats_measurement.Services
                                
                 foreach (var prompt in prompts)
                 {
-                    tasks.Add(AskSingleAsync(querier, prompt, ct));
+                    tasks.Add(AskSingleAsync(querier, prompt, jobId, ct));
                 }
             }
 

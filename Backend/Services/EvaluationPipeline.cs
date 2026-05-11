@@ -25,7 +25,7 @@ namespace AI_stats_measurement.Backend.Services
             _analyticsService = analyticsService;
         }
 
-        public async Task<List<ExportRow>> RunAsync(List<int> promptIds, List<string> modelNames , CancellationToken ct)
+        public async Task<List<ExportRow>> RunAsync(List<int> promptIds, List<string> modelNames , Guid jobId, CancellationToken ct)
         {
             // Step 1: Retrieve prompts from the database
             var prompts = await _context.Prompts
@@ -38,7 +38,7 @@ namespace AI_stats_measurement.Backend.Services
             var rows = new List<ExportRow>();
 
             // Step 2: Get responses from the LLM aggregator
-            var responses = await _llmAggregator.AskByPromptIdsAsync(promptIds, modelNames, ct);
+            var responses = await _llmAggregator.AskByPromptIdsAsync(promptIds, modelNames, jobId, ct);
 
             _context.ModelResponses.AddRange(responses);
             await _context.SaveChangesAsync(ct);
@@ -78,6 +78,7 @@ namespace AI_stats_measurement.Backend.Services
 
                 // Step 5: Create export rows
                 rows.Add(new ExportRow(
+                    modelResponseId: response.Id,
                     theme: prompt.Theme,
                     question: prompt.Question,
                     expectedAnswer: prompt.Answer,
@@ -199,6 +200,7 @@ namespace AI_stats_measurement.Backend.Services
 
                 // Step 5: Create export rows
                 rows.Add(new ExportRow(
+                    modelResponseId: response.Id,
                     theme: prompt.Theme,
                     question: prompt.Question,
                     expectedAnswer: prompt.Answer,

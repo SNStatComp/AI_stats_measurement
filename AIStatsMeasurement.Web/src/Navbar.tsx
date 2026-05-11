@@ -1,6 +1,7 @@
 import { Link, useLocation } from "react-router-dom";
 import { useEffect, useState } from "react";
 import "./Navbar.css";
+import statCompLogo from "./assets/StatComp.png";
 
 type User = {
   name: string | null;
@@ -39,14 +40,16 @@ function Navbar() {
   const logout = () => {
     localStorage.removeItem("token");
     setUser(null);
-    window.location.href = "/login";
+    window.location.href = "/";
   };
 
   return (
     <nav className="navbar">
       <div className="navbar-inner">
-        <h2 className="logo">LLM Statistics Monitoring</h2>
-
+        <div className="logo-container">
+          <img src={statCompLogo} alt="StatComp Logo" className="logo-image" />
+          <h2 className="logo">LLM Statistics Monitoring</h2>
+        </div>
         <div className="nav-links">
           <Link to="/" className={location.pathname === "/" ? "active" : ""}>
             Analytics
@@ -56,32 +59,47 @@ function Navbar() {
             Run Single Prompt
           </Link>
 
-          <Link to="/run-multiple" className={location.pathname === "/run-multiple" ? "active" : ""}>
+          <Link
+            to="/run-multiple"
+            className={location.pathname === "/run-multiple" ? "active" : ""}
+          >
             Run Multiple Prompts
           </Link>
 
-          <Link to="/create-prompt" className={location.pathname === "/create-prompt" ? "active" : ""}>
+          <Link
+            to="/create-prompt"
+            className={location.pathname === "/create-prompt" ? "active" : ""}
+          >
             Create Prompt
           </Link>
 
-          <Link to="/model-responses" className={location.pathname === "/model-responses" ? "active" : ""}>
+          <Link
+            to="/model-responses"
+            className={location.pathname === "/model-responses" ? "active" : ""}
+          >
             Model Responses
           </Link>
 
-          {user ? (
-            <>
-              <span className="logged-in-user">
-                {user.email ?? user.name}
-              </span>
-              <button className="logout-button" onClick={logout}>
-                Logout
-              </button>
-            </>
-          ) : (
-            <Link to="/login" className={location.pathname === "/login" ? "active" : ""}>
-              Login
-            </Link>
-          )}
+          <div className="auth-section">
+            {user ? (
+              <>
+                <span className="logged-in-user">
+                  {user.email ?? user.name}
+                </span>
+
+                <button className="logout-button" onClick={logout}>
+                  Logout
+                </button>
+              </>
+            ) : (
+              <Link
+                to="/login"
+                className={location.pathname === "/login" ? "active" : ""}
+              >
+                Login
+              </Link>
+            )}
+          </div>
         </div>
       </div>
     </nav>

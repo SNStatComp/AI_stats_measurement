@@ -53,11 +53,7 @@ namespace AI_stats_measurement.Controllers
                     backgroundJob!.Status = "Running";
                     await db.SaveChangesAsync();
 
-                    await pipeline.RunAsync(
-                        request.PromptIds,
-                        request.ModelNames,
-                        CancellationToken.None
-                    );
+                    await pipeline.RunAsync(request.PromptIds, request.ModelNames, job.Id, CancellationToken.None);
 
                     backgroundJob.Status = "Completed";
                     backgroundJob.FinishedUtc = DateTime.UtcNow;
