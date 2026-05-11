@@ -55,23 +55,27 @@ function Navbar() {
             Analytics
           </Link>
 
-          <Link to="/run" className={location.pathname === "/run" ? "active" : ""}>
-            Run Single Prompt
-          </Link>
+          {user && (
+            <>
+              <Link to="/run" className={location.pathname === "/run" ? "active" : ""}>
+                Run Single Prompt
+              </Link>
 
-          <Link
-            to="/run-multiple"
-            className={location.pathname === "/run-multiple" ? "active" : ""}
-          >
-            Run Multiple Prompts
-          </Link>
+              <Link
+                to="/run-multiple"
+                className={location.pathname === "/run-multiple" ? "active" : ""}
+              >
+                Run Multiple Prompts
+              </Link>
 
-          <Link
-            to="/create-prompt"
-            className={location.pathname === "/create-prompt" ? "active" : ""}
-          >
-            Create Prompt
-          </Link>
+              <Link
+                to="/create-prompt"
+                className={location.pathname === "/create-prompt" ? "active" : ""}
+              >
+                Create Prompt
+              </Link>
+            </>
+          )}
 
           <Link
             to="/model-responses"
