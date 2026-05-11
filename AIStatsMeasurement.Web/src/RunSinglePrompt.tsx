@@ -3,6 +3,7 @@ import './RunSinglePrompt.css'
 import ExportRowCard from './components/ExportRowCard'
 import { API_BASE_URL } from '../config'
 import { apiFetch } from './apiFetch'
+import { runLlmJob, type ResultWithSources } from './pages/llmJobRunner'
 
 type Prompt = {
   id: number
@@ -21,53 +22,6 @@ const modelOptions = [
   'grok-4.20-reasoning'
 ]
 
-type ExportRow = {
-  id: number
-  theme: string
-  question: string
-  expectedAnswer: number
-  expectedSource: string
-  actualAnswer: number
-  actualSource: number[]
-  provider: string
-  rawText: string | null
-  exception: string | null
-  squareMeanRootError: number
-  relativeError: number
-  answerIsCorrect: boolean
-  sourceIsCorrect: boolean
-  createdUtc: string
-}
-
-type SourceDto = {
-  id: number
-  name: string | null
-  url: string | null
-  type: string | null
-}
-
-type ResultWithSources = ExportRow & {
-  actualSourceDetails: SourceDto[]
-}
-
-const fetchSourcesByIds = async (ids: number[]): Promise<SourceDto[]> => {
-  if (!ids.length) return []
-
-  const response = await apiFetch(`/api/sources/getByIds`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify(ids)
-  })
-
-  if (!response.ok) {
-    throw new Error('Failed to fetch sources')
-  }
-
-  return response.json()
-}
-
 function RunSinglePrompt() {
   const [prompts, setPrompts] = useState<Prompt[]>([])
   const [selectedPromptId, setSelectedPromptId] = useState<number | null>(null)
@@ -80,6 +34,7 @@ function RunSinglePrompt() {
   const [isLoading, setIsLoading] = useState(false)
   const [results, setResults] = useState<ResultWithSources[]>([])
   const [error, setError] = useState('')
+  const [jobStatus, setJobStatus] = useState('')
 
   useEffect(() => {
     apiFetch(`${API_BASE_URL}/api/prompts`)
@@ -112,46 +67,25 @@ function RunSinglePrompt() {
 
     if (!selectedPromptId || isLoading) return
 
+    if (!selectedModels.length) {
+      alert('Select at least one model')
+      return
+    }
+
     setIsLoading(true)
     setError('')
     setResults([])
+    setJobStatus('')
 
     try {
-      const response = await apiFetch(`${API_BASE_URL}/api/llm/run`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          promptIds: [selectedPromptId],
-          modelNames: selectedModels
-        })
-      })
-
-      if (!response.ok) {
-        const errorText = await response.text()
-        throw new Error(errorText || 'Request failed')
-      }
-
-      const data: ExportRow[] = await response.json()
-
-      const allSourceIds = [...new Set(data.flatMap((r) => r.actualSource ?? []))]
-
-      const sourceDtos = await fetchSourcesByIds(allSourceIds)
-
-      const sourceMap = new Map<number, SourceDto>(
-        sourceDtos.map((source) => [source.id, source])
+      const enrichedResults = await runLlmJob(
+        [selectedPromptId],
+        selectedModels,
+        setJobStatus
       )
-      
-
-      const enrichedResults: ResultWithSources[] = data.map((result) => ({
-        ...result,
-        actualSourceDetails: (result.actualSource ?? [])
-          .map((id) => sourceMap.get(id))
-          .filter((source): source is SourceDto => Boolean(source))
-      }))
 
       setResults(enrichedResults)
+      setJobStatus('Completed')
     } catch (err) {
       if (err instanceof Error) {
         setError(err.message)
@@ -246,7 +180,12 @@ function RunSinglePrompt() {
         </button>
       </form>
 
-      {error && <div className="error-message">{error}</div>}
+      {jobStatus && (
+        <div className="question-preview">
+          <strong>{jobStatus}</strong>
+        </div>
+      )}
+
 
       {results.length > 0 && (
         <div className="results-section">

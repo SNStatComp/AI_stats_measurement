@@ -3,6 +3,7 @@ import './RunSinglePrompt.css'
 import ExportRowCard from './components/ExportRowCard'
 import { API_BASE_URL } from '../config'
 import { apiFetch } from './apiFetch'
+import { runLlmJob, type ResultWithSources } from './pages/llmJobRunner'
 
 const nsiOptions = ['CBS', 'OECD', 'StatBank Denmark']
 
@@ -68,36 +69,6 @@ type Prompt = {
   subject: string
   question: string
 }
-
-type ExportRow = {
-  id: number
-  theme: string
-  question: string
-  expectedAnswer: number
-  expectedSource: string
-  actualAnswer: number
-  actualSource: number[]
-  provider: string
-  rawText: string | null
-  exception: string | null
-  squareMeanRootError: number
-  relativeError: number
-  answerIsCorrect: boolean
-  sourceIsCorrect: boolean
-  createdUtc: string
-}
-
-type SourceDto = {
-  id: number
-  name: string | null
-  url: string | null
-  type: string | null
-}
-
-type ResultWithSources = ExportRow & {
-  actualSourceDetails: SourceDto[]
-}
-
 const cardStyle = {
   background: '#ffffff',
   border: '1px solid #e2e8f0',
@@ -114,24 +85,6 @@ const selectStyle = {
   fontSize: '14px'
 }
 
-const fetchSourcesByIds = async (ids: number[]): Promise<SourceDto[]> => {
-  if (!ids.length) return []
-
-  const response = await apiFetch(`/api/sources/getByIds`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify(ids)
-  })
-
-  if (!response.ok) {
-    throw new Error('Failed to fetch sources')
-  }
-
-  return response.json()
-}
-
 function RunMultiplePrompts() {
   const [isLoading, setIsLoading] = useState(false)
   const [results, setResults] = useState<ResultWithSources[]>([])
@@ -145,6 +98,8 @@ function RunMultiplePrompts() {
   const [filteredPrompts, setFilteredPrompts] = useState<Prompt[]>([])
   const [selectedPromptIds, setSelectedPromptIds] = useState<number[]>([])
 
+  const [jobStatus, setJobStatus] = useState('')
+
   const [selectedModels, setSelectedModels] = useState<string[]>([
     'gpt-4o-mini',
     'gemini-2.5-flash-lite',
@@ -154,12 +109,12 @@ function RunMultiplePrompts() {
   const [isExportOpen, setIsExportOpen] = useState(false)
 
   function handleModelToggle(modelName: string) {
-  setSelectedModels((prev) =>
-    prev.includes(modelName)
-      ? prev.filter((m) => m !== modelName)
-      : [...prev, modelName]
-  )
-}
+    setSelectedModels((prev) =>
+      prev.includes(modelName)
+        ? prev.filter((m) => m !== modelName)
+        : [...prev, modelName]
+    )
+  }
 
   useEffect(() => {
     apiFetch(`${API_BASE_URL}/api/prompts`)
@@ -207,272 +162,231 @@ function RunMultiplePrompts() {
       .catch(() => console.log('Failed loading prompts by NSI'))
   }, [selectedNsi, selectedTheme, prompts])
 
-  const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
 
-const chunkArray = <T,>(items: T[], size: number): T[][] => {
-  const chunks: T[][] = []
+    if (!selectedPromptIds.length || isLoading) return
 
-  for (let i = 0; i < items.length; i += size) {
-    chunks.push(items.slice(i, i + size))
-  }
+    if (!selectedModels.length) {
+      alert('Select at least one model')
+      return
+    }
 
-  return chunks
-}
+    setIsLoading(true)
+    setError('')
+    setResults([])
+    setJobStatus('')
 
-const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
-  e.preventDefault()
-
-  if (!selectedPromptIds.length || isLoading) return
-
-  if (!selectedModels.length) {
-    alert('Select at least one model')
-    return
-  }
-
-  setIsLoading(true)
-  setError('')
-  setResults([])
-
-  const batches = chunkArray(selectedPromptIds, 25)
-
-  try {
-    for (let i = 0; i < batches.length; i++) {
-      const batch = batches[i]
-
-      const response = await apiFetch(`${API_BASE_URL}/api/llm/run`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          promptIds: batch,
-          modelNames: selectedModels
-        })
-      })
-
-      if (!response.ok) {
-        const errorText = await response.text()
-        throw new Error(errorText || 'Request failed')
-      }
-
-      const data: ExportRow[] = await response.json()
-
-      const allSourceIds = [...new Set(data.flatMap((r) => r.actualSource ?? []))]
-      const sourceDtos = await fetchSourcesByIds(allSourceIds)
-
-      const sourceMap = new Map<number, SourceDto>(
-        sourceDtos.map((source) => [source.id, source])
+    try {
+      const enrichedResults = await runLlmJob(
+        selectedPromptIds,
+        selectedModels,
+        setJobStatus
       )
 
-      const enrichedResults: ResultWithSources[] = data.map((result) => ({
-        ...result,
-        actualSourceDetails: (result.actualSource ?? [])
-          .map((id) => sourceMap.get(id))
-          .filter((source): source is SourceDto => Boolean(source))
-      }))
-
-      setResults((prev) => [...prev, ...enrichedResults])
-
-      if (i < batches.length - 1) {
-        await sleep(60_000)
+      setResults(enrichedResults)
+      setJobStatus('Completed')
+    } catch (err) {
+      if (err instanceof Error) {
+        setError(err.message)
+      } else {
+        setError('Something went wrong.')
       }
+    } finally {
+      setIsLoading(false)
     }
-  } catch (err) {
-    if (err instanceof Error) {
-      setError(err.message)
-    } else {
-      setError('Something went wrong.')
-    }
-  } finally {
-    setIsLoading(false)
   }
-}
-  
 
   return (
     <div className="app-container">
-  <h1>Run Multiple Prompts</h1>
+      <h1>Run Multiple Prompts</h1>
 
-  <div
-    style={{
-      display: 'grid',
-      gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
-      gap: '16px',
-      marginBottom: '20px'
-    }}
-  >
-    <div style={cardStyle}>
-      <label style={{ display: 'block', fontWeight: 700, marginBottom: '8px' }}>
-        Select NSI
-      </label>
-
-      <select
-        value={selectedNsi}
-        onChange={(e) => setSelectedNsi(e.target.value)}
-        style={selectStyle}
-      >
-        <option value="">All NSI's</option>
-        {nsiOptions.map((nsi) => (
-          <option key={nsi} value={nsi}>
-            {nsi}
-          </option>
-        ))}
-      </select>
-    </div>
-
-    <div style={cardStyle}>
-      <label style={{ display: 'block', fontWeight: 700, marginBottom: '8px' }}>
-        Select Theme
-      </label>
-
-      <select
-        value={selectedTheme}
-        onChange={(e) => setSelectedTheme(e.target.value)}
-        style={selectStyle}
-      >
-        <option value="">All themes</option>
-        {themes.map((theme) => (
-          <option key={theme} value={theme}>
-            {theme}
-          </option>
-        ))}
-      </select>
-    </div>
-  </div>
-
-  <div style={{ ...cardStyle, marginBottom: '20px' }}>
-    <label style={{ display: 'block', fontWeight: 700, marginBottom: '12px' }}>
-      Select models
-    </label>
-
-    <div
-      style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-        gap: '10px'
-      }}
-    >
-      {modelOptions.map((model) => (
-        <label
-          key={model}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '10px',
-            background: '#fff',
-            padding: '10px 14px',
-            borderRadius: '12px',
-            border: '1px solid #e2e8f0',
-            cursor: 'pointer'
-          }}
-        >
-          <input
-            type="checkbox"
-            checked={selectedModels.includes(model)}
-            onChange={() => handleModelToggle(model)}
-          />
-          <span>{model}</span>
-        </label>
-      ))}
-    </div>
-  </div>
-
-  <div className="question-preview">
-    <strong>Selected prompts:</strong> {selectedPromptIds.length}
-  </div>
-
-  <div className="question-preview">
-    <strong>Matching prompt subjects:</strong>
-    <ul style={{ marginTop: '8px' }}>
-      {filteredPrompts.map((prompt) => (
-        <li key={prompt.id}>
-          {prompt.subject}
-        </li>
-      ))}
-    </ul>
-  </div>
-
-  <form onSubmit={handleSubmit}>
-    <button
-      type="submit"
-      disabled={!selectedPromptIds.length || !selectedModels.length || isLoading}
-      className="run-button"
-    >
-      {isLoading ? 'Running prompts in batches...' : 'Run All Matching Prompts'}
-    </button>
-  </form>
-
-      <div> 
-          <div
-  style={{
-    display: 'flex',
-    justifyContent: 'flex-end',
-    marginBottom: '16px'
-  }}
->
-    <button
-      type="button"
-      className="run-button"
-      onClick={() => setIsExportOpen((prev) => !prev)}
-      style={{ minWidth: '140px' }}
-    >
-      Export
-    </button>
-
-    {isExportOpen && (
       <div
         style={{
-          position: 'absolute',
-          top: '110%',
-          right: 0,
-          background: '#ffffff',
-          border: '1px solid #e2e8f0',
-          borderRadius: '12px',
-          boxShadow: '0 10px 24px rgba(15, 23, 42, 0.12)',
-          overflow: 'hidden',
-          zIndex: 20,
-          minWidth: '160px'
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
+          gap: '16px',
+          marginBottom: '20px'
         }}
       >
-        <button
-          type="button"
-          onClick={() => {
-            exportToCsv(results)
-            setIsExportOpen(false)
-          }}
-          style={{
-            width: '100%',
-            padding: '12px 16px',
-            border: 'none',
-            background: '#fff',
-            textAlign: 'left',
-            cursor: 'pointer'
-          }}
-        >
-          Export as CSV
-        </button>
+        <div style={cardStyle}>
+          <label style={{ display: 'block', fontWeight: 700, marginBottom: '8px' }}>
+            Select NSI
+          </label>
 
-        <button
-          type="button"
-          onClick={() => {
-            exportToJson(results)
-            setIsExportOpen(false)
-          }}
+          <select
+            value={selectedNsi}
+            onChange={(e) => setSelectedNsi(e.target.value)}
+            style={selectStyle}
+          >
+            <option value="">All NSI's</option>
+            {nsiOptions.map((nsi) => (
+              <option key={nsi} value={nsi}>
+                {nsi}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div style={cardStyle}>
+          <label style={{ display: 'block', fontWeight: 700, marginBottom: '8px' }}>
+            Select Theme
+          </label>
+
+          <select
+            value={selectedTheme}
+            onChange={(e) => setSelectedTheme(e.target.value)}
+            style={selectStyle}
+          >
+            <option value="">All themes</option>
+            {themes.map((theme) => (
+              <option key={theme} value={theme}>
+                {theme}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      <div style={{ ...cardStyle, marginBottom: '20px' }}>
+        <label style={{ display: 'block', fontWeight: 700, marginBottom: '12px' }}>
+          Select models
+        </label>
+
+        <div
           style={{
-            width: '100%',
-            padding: '12px 16px',
-            border: 'none',
-            background: '#fff',
-            textAlign: 'left',
-            cursor: 'pointer',
-            borderTop: '1px solid #e2e8f0'
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+            gap: '10px'
           }}
         >
-          Export as JSON
-        </button>
+          {modelOptions.map((model) => (
+            <label
+              key={model}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px',
+                background: '#fff',
+                padding: '10px 14px',
+                borderRadius: '12px',
+                border: '1px solid #e2e8f0',
+                cursor: 'pointer'
+              }}
+            >
+              <input
+                type="checkbox"
+                checked={selectedModels.includes(model)}
+                onChange={() => handleModelToggle(model)}
+              />
+              <span>{model}</span>
+            </label>
+          ))}
+        </div>
       </div>
-    )}
-  </div>
+
+      <div className="question-preview">
+        <strong>Selected prompts:</strong> {selectedPromptIds.length}
+      </div>
+
+      <div className="question-preview">
+        <strong>Matching prompt subjects:</strong>
+        <ul style={{ marginTop: '8px' }}>
+          {filteredPrompts.map((prompt) => (
+            <li key={prompt.id}>
+              {prompt.subject}
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      <form onSubmit={handleSubmit}>
+        <button
+          type="submit"
+          disabled={!selectedPromptIds.length || !selectedModels.length || isLoading}
+          className="run-button"
+        >
+          {isLoading ? 'Running job...' : 'Run All Matching Prompts'}
+        </button>
+      </form>
+
+      {jobStatus && (
+        <div className="question-preview">
+          <strong>{jobStatus}</strong>
+        </div>
+      )}
+
+      <div>
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'flex-end',
+            marginBottom: '16px'
+          }}
+        >
+          <button
+            type="button"
+            className="run-button"
+            onClick={() => setIsExportOpen((prev) => !prev)}
+            style={{ minWidth: '140px' }}
+          >
+            Export
+          </button>
+
+          {isExportOpen && (
+            <div
+              style={{
+                position: 'absolute',
+                top: '110%',
+                right: 0,
+                background: '#ffffff',
+                border: '1px solid #e2e8f0',
+                borderRadius: '12px',
+                boxShadow: '0 10px 24px rgba(15, 23, 42, 0.12)',
+                overflow: 'hidden',
+                zIndex: 20,
+                minWidth: '160px'
+              }}
+            >
+              <button
+                type="button"
+                onClick={() => {
+                  exportToCsv(results)
+                  setIsExportOpen(false)
+                }}
+                style={{
+                  width: '100%',
+                  padding: '12px 16px',
+                  border: 'none',
+                  background: '#fff',
+                  textAlign: 'left',
+                  cursor: 'pointer'
+                }}
+              >
+                Export as CSV
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  exportToJson(results)
+                  setIsExportOpen(false)
+                }}
+                style={{
+                  width: '100%',
+                  padding: '12px 16px',
+                  border: 'none',
+                  background: '#fff',
+                  textAlign: 'left',
+                  cursor: 'pointer',
+                  borderTop: '1px solid #e2e8f0'
+                }}
+              >
+                Export as JSON
+              </button>
+            </div>
+          )}
+        </div>
 
       </div>
 
@@ -492,17 +406,15 @@ const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
             ))}
           </div>
           <div
-  style={{
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: '16px'
-  }}
->
-
-</div>
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: '16px'
+            }}
+          >
+          </div>
         </div>
-        
       )}
     </div>
   )

@@ -70,9 +70,12 @@ namespace AI_stats_measurement.Backend.Controllers
         {
             return Ok(new
             {
-                name = User.Identity?.Name,
+                name = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Name)?.Value,
                 email = User.Claims.FirstOrDefault(c => c.Type == JwtRegisteredClaimNames.Email)?.Value,
-                roles = User.Claims.Where(c => c.Type == ClaimTypes.Role).Select(c => c.Value).ToList()
+                roles = User.Claims
+                    .Where(c => c.Type == ClaimTypes.Role)
+                    .Select(c => c.Value)
+                    .ToList()
             });
         }
     }
