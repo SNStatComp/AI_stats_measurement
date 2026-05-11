@@ -99,7 +99,7 @@ export const runLlmJob = async (
   while (status !== 'Completed' && status !== 'Failed') {
     await sleep(3000)
 
-    const statusResponse = await apiFetch(`${API_BASE_URL}/api/llm/jobs/${jobId}`)
+    const statusResponse = await apiFetch(`${API_BASE_URL}/api/llmjobs/jobs/${jobId}`)
 
     if (!statusResponse.ok) {
       const errorText = await statusResponse.text()
@@ -119,7 +119,7 @@ export const runLlmJob = async (
     }
   }
 
-  const resultResponse = await apiFetch(`${API_BASE_URL}/api/llm/jobs/${jobId}/result`)
+  const resultResponse = await apiFetch(`${API_BASE_URL}/api/llmjobs/jobs/${jobId}/result`)
 
   if (!resultResponse.ok) {
     const errorText = await resultResponse.text()
