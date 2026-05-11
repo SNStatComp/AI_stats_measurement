@@ -49,7 +49,7 @@ namespace AI_stats_measurement.Backend.Controllers
                 .ToListAsync(ct);
 
             var rows = await _context.ExportRows
-                .Where(r => modelResponseIds.Contains(r.ModelResponseId))
+                .Where(r => modelResponseIds.Contains((int)r.ModelResponseId))
                 .OrderBy(r => r.Question)
                 .ThenBy(r => r.Provider)
                 .ToListAsync(ct);
