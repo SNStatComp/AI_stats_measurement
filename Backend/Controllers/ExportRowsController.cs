@@ -57,6 +57,7 @@ namespace AI_stats_measurement.Backend.Controllers
                             .ThenInclude(p => p.Source)
                 .Where(f => f.ParsedModelResponse.ModelResponse.Prompt.Id == promptId)
                 .Select(f => new ExportRow(
+                    f.ParsedModelResponse.ModelResponse.Id,
                     f.ParsedModelResponse.ModelResponse.Prompt.Theme,
                     f.ParsedModelResponse.ModelResponse.Prompt.Question,
                     f.ParsedModelResponse.ModelResponse.Prompt.Answer,

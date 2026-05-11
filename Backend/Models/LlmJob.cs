@@ -5,6 +5,7 @@
         public Guid Id { get; set; }
         public string Status { get; set; } = "Queued";
         public string? Error { get; set; }
+        public List<ModelResponse> ModelResponses { get; set; } = new();
         public DateTime CreatedUtc { get; set; } = DateTime.UtcNow;
         public DateTime? FinishedUtc { get; set; }
     }

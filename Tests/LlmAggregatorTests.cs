@@ -48,6 +48,7 @@ public class LlmAggregatorTests
         var result = await aggregator.AskByPromptIdsAsync(
             new List<int> { 1, 2 },
             new List<string> { "ChatGPT" }, 
+            new Guid(),
             CancellationToken.None
         );
 
@@ -73,6 +74,7 @@ public class LlmAggregatorTests
         var result = await aggregator.AskByPromptIdsAsync(
             new List<int> { 999 }, 
             new List<string> { "ChatGPT" },
+            new Guid(),
             CancellationToken.None
         );
 
@@ -100,6 +102,7 @@ public class LlmAggregatorTests
         var result = await aggregator.AskByPromptIdsAsync(
             new List<int> { 1 },
             new List<string> { "ChatGPT" },
+            new Guid(),
             CancellationToken.None
         );
 

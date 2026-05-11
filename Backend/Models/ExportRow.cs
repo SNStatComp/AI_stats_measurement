@@ -8,6 +8,10 @@ namespace AI_stats_measurement.Backend.Models
     public class ExportRow
     {
         public int Id { get; private set; }
+
+        public int ModelResponseId { get; internal set; }
+        public ModelResponse ModelResponse { get; private set; } = null!;
+
         public string Theme { get; private set; } = null!;
         public string Question { get; private set; } = null!;
         public decimal ExpectedAnswer { get; private set; }
@@ -26,6 +30,7 @@ namespace AI_stats_measurement.Backend.Models
         private ExportRow() { }
 
         public ExportRow(
+            int modelResponseId,
             string theme,
             string question,
             decimal expectedAnswer,
@@ -41,6 +46,7 @@ namespace AI_stats_measurement.Backend.Models
             bool sourceIsCorrect,
             DateTime createdUtc)
         {
+            ModelResponseId = modelResponseId;
             Theme = theme;
             Question = question;
             ExpectedAnswer = expectedAnswer;
