@@ -97,7 +97,7 @@ public class AIMeasureDbContext : IdentityDbContext<ApplicationUser>
             .HasOne(er => er.ModelResponse)
             .WithMany()
             .HasForeignKey(er => er.ModelResponseId)
-            .OnDelete(DeleteBehavior.Cascade);
-    }
+            .OnDelete(DeleteBehavior.SetNull);
+            }
 }
 
