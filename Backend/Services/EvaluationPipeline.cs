@@ -1,7 +1,6 @@
 ﻿using AI_stats_measurement.Backend.Models;
 using AI_stats_measurement.Backend.Services.Parsing;
 using AI_stats_measurement.Data;
-using AI_stats_measurement.Models;
 using AI_stats_measurement.Services;
 using Azure;
 using Microsoft.EntityFrameworkCore;

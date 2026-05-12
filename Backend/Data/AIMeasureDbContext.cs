@@ -1,5 +1,4 @@
 ﻿using AI_stats_measurement.Backend.Models;
-using AI_stats_measurement.Models;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 

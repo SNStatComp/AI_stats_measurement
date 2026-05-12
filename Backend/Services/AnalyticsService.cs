@@ -1,5 +1,5 @@
 ﻿using AI_stats_measurement.Backend.Dto;
-using AI_stats_measurement.Models;
+using AI_stats_measurement.Backend.Models;
 using System.Collections.Generic;
 
 namespace AI_stats_measurement.Backend.Services

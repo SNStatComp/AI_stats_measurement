@@ -2,7 +2,6 @@
 using AI_stats_measurement.Backend.Services;
 using AI_stats_measurement.Data;
 using AI_stats_measurement.Interface;
-using AI_stats_measurement.Models;
 using AI_stats_measurement.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;

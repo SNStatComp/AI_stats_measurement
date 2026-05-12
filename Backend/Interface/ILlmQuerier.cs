@@ -1,4 +1,6 @@
-﻿namespace AI_stats_measurement.Interface
+﻿using AI_stats_measurement.Backend.Models;
+
+namespace AI_stats_measurement.Interface
 {
     public interface ILlmQuerier
     {

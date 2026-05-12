@@ -1,5 +1,7 @@
 ﻿#pragma warning disable OPENAI001
+using AI_stats_measurement.Backend.Models;
 using AI_stats_measurement.Interface;
+
 using OpenAI.Responses;
 
 namespace AI_stats_measurement.Backend.Clients

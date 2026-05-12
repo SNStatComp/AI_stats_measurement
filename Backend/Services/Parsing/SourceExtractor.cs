@@ -1,7 +1,7 @@
 ﻿using AI_stats_measurement.Backend.Enums;
 using AI_stats_measurement.Backend.Helpers;
 using AI_stats_measurement.Backend.Services.Classification;
-using AI_stats_measurement.Models;
+using AI_stats_measurement.Backend.Models;
 using System.Text.RegularExpressions;
 
 namespace AI_stats_measurement.Backend.Services.Parsing

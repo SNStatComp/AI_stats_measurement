@@ -1,6 +1,6 @@
-﻿using AI_stats_measurement.Data;
+﻿using AI_stats_measurement.Backend.Models;
+using AI_stats_measurement.Data;
 using AI_stats_measurement.Interface;
-using AI_stats_measurement.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace AI_stats_measurement.Services
