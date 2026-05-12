@@ -2,7 +2,7 @@ FROM node:20 AS build
 WORKDIR /app
 
 COPY AIStatsMeasurement.Web/package*.json ./
-RUN npm install
+RUN npm ci
 
 COPY AIStatsMeasurement.Web/ .
 RUN npm run build
