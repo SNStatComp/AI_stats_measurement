@@ -1,6 +1,7 @@
 ﻿using AI_stats_measurement.Backend.Models;
 using AI_stats_measurement.Models;
 
+namespace AI_stats_measurement.Backend.Models;
 public class ModelResponse
 {
     public int Id { get; init; }
