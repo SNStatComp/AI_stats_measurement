@@ -1,6 +1,4 @@
-﻿using AI_stats_measurement.Models;
-
-namespace AI_stats_measurement.Backend.Models
+﻿namespace AI_stats_measurement.Backend.Models
 {
     public class ParsedModelResponseSource
     {

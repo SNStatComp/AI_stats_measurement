@@ -1,6 +1,5 @@
 ﻿using AI_stats_measurement.Backend.Models;
 using AI_stats_measurement.Data;
-using AI_stats_measurement.Models;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;

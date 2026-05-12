@@ -1,4 +1,5 @@
-﻿using AI_stats_measurement.Interface;
+﻿using AI_stats_measurement.Backend.Models;
+using AI_stats_measurement.Interface;
 using Google.GenAI;
 using Google.GenAI.Types;
 

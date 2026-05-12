@@ -1,7 +1,7 @@
 ﻿using AI_stats_measurement.Backend.Models;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace AI_stats_measurement.Models
+namespace AI_stats_measurement.Backend.Models
 {
     public class ParsedModelResponse
     {

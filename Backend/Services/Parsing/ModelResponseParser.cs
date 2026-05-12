@@ -1,7 +1,6 @@
 ﻿using AI_stats_measurement.Backend.Enums;
 using AI_stats_measurement.Backend.Models;
 using AI_stats_measurement.Data;
-using AI_stats_measurement.Models;
 using Microsoft.Recognizers.Text;
 using Microsoft.Recognizers.Text.Number;
 using Newtonsoft.Json.Linq;
