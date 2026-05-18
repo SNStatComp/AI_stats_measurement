@@ -265,4 +265,24 @@ public class ModelResponseParserTests
 
         Assert.Equal(0, parsed.Answer);
     }
+
+    [Fact]
+    public void Parse_Returns_Zero_Ignore_Dates_English()
+    {
+        var text = "As of October 1, 2020";
+
+        var parsed = ModelResponseParser.ParseEnglish(0, text);
+
+        Assert.Equal(0, parsed.Answer);
+    }
+
+    [Fact]
+    public void Parse_Returns_Zero_Ignore_Bold_Dates_English()
+    {
+        var text = "**January 1, 2020** (the first day of Q1 2020)";
+
+        var parsed = ModelResponseParser.ParseEnglish(0, text);
+
+        Assert.Equal(0, parsed.Answer);
+    }
 }

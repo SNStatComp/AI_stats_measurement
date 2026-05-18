@@ -6,12 +6,13 @@ namespace AI_stats_measurement.Backend.Services.Parsing
     {
         public static string Clean(string text)
         {
-            // remove full Dutch dates like "1 januari 2021"
+            // remove Dutch and English full dates like:"1 januari 2021", "1 January 2021", "October 1, 2020"
             text = Regex.Replace(
                 text,
-                @"\b\d{1,2}\s+(januari|februari|maart|april|mei|juni|juli|augustus|september|oktober|november|december)\s+(19|20)\d{2}\b",
+                @"\b(?:\d{1,2}\s+(?:januari|februari|maart|april|mei|juni|juli|augustus|september|oktober|november|december|january|february|march|april|may|june|july|august|september|october|november|december)\s+(?:19|20)\d{2}|(?:january|february|march|april|may|june|july|august|september|october|november|december)\s+\d{1,2},\s+(?:19|20)\d{2})\b",
                 "",
-                RegexOptions.IgnoreCase,TimeSpan.FromMilliseconds(100)
+                RegexOptions.IgnoreCase,
+                TimeSpan.FromMilliseconds(100)
             );
 
             text = Regex.Replace(text, @"https?:\/\/\S+", "", RegexOptions.IgnoreCase, TimeSpan.FromMilliseconds(100)); // remove urls
