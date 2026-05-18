@@ -2,6 +2,7 @@
 using AI_stats_measurement.Backend.Models;
 using AI_stats_measurement.Data;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.InMemory;
 
 namespace AI_stats_measurement.Backend.Services;
 
@@ -17,6 +18,7 @@ public class DataTransferService : IDataTransferService
         _context = context;
         _environment = environment;
     }
+
 
     public async Task ImportAsync(DataExportBundleDto bundle)
     {
@@ -260,12 +262,15 @@ public class DataTransferService : IDataTransferService
 
     private async Task ResetSequenceAsync(string tableName, string columnName)
     {
+        if (_context.Database.IsInMemory())
+            return;
+
         var sql = $@"
-            SELECT setval(
-                pg_get_serial_sequence('""{tableName}""', '{columnName}'),
-                COALESCE((SELECT MAX(""{columnName}"") FROM ""{tableName}""), 1),
-                true
-            );";
+        SELECT setval(
+            pg_get_serial_sequence('""{tableName}""', '{columnName}'),
+            COALESCE((SELECT MAX(""{columnName}"") FROM ""{tableName}""), 1),
+            true
+        );";
 
         await _context.Database.ExecuteSqlRawAsync(sql);
     }
