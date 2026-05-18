@@ -16,10 +16,12 @@ const llmOptions = [
   'gemini-2.5-flash-lite',
   'gpt-4o-mini',
   'grok-4-1-fast-non-reasoning',
+  'grok-4.20-0309-reasoning',
   'gemini-3.1-pro',
   'gemini-2.5-pro',
   'gpt-5.4',
   'grok-4.20-reasoning',
+  'grok-4.3',
   'websearch enabled',
   'websearch disabled'
 ]

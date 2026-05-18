@@ -12,7 +12,7 @@ namespace AI_stats_measurement.Clients
         private readonly HttpClient _httpClient;
         private readonly string _apiKey;
 
-        public string Name => "grok-4-1-fast-non-reasoning";
+        public string Name => "grok-4.3";
 
         public GrokQuerier(IConfiguration config)
         {
