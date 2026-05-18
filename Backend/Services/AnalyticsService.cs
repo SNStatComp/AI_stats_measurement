@@ -375,7 +375,8 @@ namespace AI_stats_measurement.Backend.Services
             if (llmGroup.Equals("websearch disabled", StringComparison.OrdinalIgnoreCase))
             {
                 return provider.StartsWith("gemini-2.5-flash-lite", StringComparison.OrdinalIgnoreCase)
-                    || provider.StartsWith("gpt-4o-mini", StringComparison.OrdinalIgnoreCase)
+                    || provider.StartsWith("gpt-4o-mini", StringComparison.OrdinalIgnoreCase) 
+                    || provider.StartsWith("grok-4.3", StringComparison.OrdinalIgnoreCase) 
                     || provider.StartsWith("grok-4-1-fast-non-reasoning", StringComparison.OrdinalIgnoreCase);
             }
 

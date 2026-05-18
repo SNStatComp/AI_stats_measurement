@@ -11,7 +11,7 @@ namespace AI_stats_measurement.Backend.Clients
         private readonly HttpClient _httpClient;
         private readonly string _apiKey;
 
-        public string Name => "grok-4.20-reasoning";
+        public string Name => "grok-4.20-0309-reasoning";
 
         public GrokWebSearchQuerier(IConfiguration config)
         {

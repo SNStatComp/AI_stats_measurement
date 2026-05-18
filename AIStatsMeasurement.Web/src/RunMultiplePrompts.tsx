@@ -11,9 +11,11 @@ const modelOptions = [
   'gpt-4o-mini',
   'gemini-2.5-flash-lite',
   'grok-4-1-fast-non-reasoning',
+  'grok-4.20-0309-reasoning',
   'gpt-5.4',
   //'gemini-3.1-pro-preview',
   'grok-4.20-reasoning',
+  'grok-4.3',
   'gemini-2.5-pro'
 ]
 
