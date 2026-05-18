@@ -6,6 +6,7 @@ import RunMultiplePrompts from "./RunMultiplePrompts.tsx";
 import CreatePrompt from "./CreatePrompt.tsx";
 import LoginPage from "./LoginPage.tsx";
 import ModelResponses from "./ModelResponsesPage.tsx";
+import AdminPage from "./pages/AdminPage.tsx";
 
 function App() {
   //const token = localStorage.getItem("token");
@@ -24,6 +25,7 @@ function App() {
         <Route path="/create-prompt" element={<CreatePrompt />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/model-responses" element={<ModelResponses />} />
+        <Route path="/admin" element={<AdminPage />} />
       </Routes>
     </BrowserRouter>
   );

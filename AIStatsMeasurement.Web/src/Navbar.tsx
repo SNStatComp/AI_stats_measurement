@@ -74,6 +74,13 @@ function Navbar() {
               >
                 Create Prompt
               </Link>
+
+              <Link
+                to="/admin"
+                className={location.pathname === "/admin" ? "active" : ""}
+              >
+                Admin
+              </Link>
             </>
           )}
 
@@ -83,6 +90,13 @@ function Navbar() {
           >
             Model Responses
           </Link>
+          
+          <Link
+                to="/admin"
+                className={location.pathname === "/admin" ? "active" : ""}
+              >
+                Admin
+              </Link>
 
           <div className="auth-section">
             {user ? (
