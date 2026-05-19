@@ -1,4 +1,5 @@
-﻿using AI_stats_measurement.Backend.Models;
+﻿using AI_stats_measurement.Backend.Interface;
+using AI_stats_measurement.Backend.Models;
 using AI_stats_measurement.Backend.Services.Parsing;
 using AI_stats_measurement.Data;
 using AI_stats_measurement.Services;
@@ -9,19 +10,17 @@ namespace AI_stats_measurement.Backend.Services
 {
     public class EvaluationPipeline
     {
-        private readonly LlmAggregator _llmAggregator;
+        private readonly ILlmAggregator _llmAggregator;
         private readonly FactChecker _checker;
         private readonly SourceNormalizer _sourceNormalizer;
         private readonly AIMeasureDbContext _context;
-        private readonly AnalyticsService _analyticsService;
 
-        public EvaluationPipeline(LlmAggregator llmAggregator, FactChecker checker,  AIMeasureDbContext context, SourceNormalizer sourceNormalizer, AnalyticsService analyticsService)
+        public EvaluationPipeline(ILlmAggregator llmAggregator, FactChecker checker,  AIMeasureDbContext context, SourceNormalizer sourceNormalizer)
         {
             _llmAggregator = llmAggregator;
             _checker = checker;
             _context = context;
             _sourceNormalizer = sourceNormalizer;
-            _analyticsService = analyticsService;
         }
 
         public async Task<List<ExportRow>> RunAsync(List<int> promptIds, List<string> modelNames , Guid jobId, CancellationToken ct)

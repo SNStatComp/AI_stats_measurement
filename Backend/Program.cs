@@ -1,4 +1,5 @@
 using AI_stats_measurement.Backend.Clients;
+using AI_stats_measurement.Backend.Interface;
 using AI_stats_measurement.Backend.Models;
 using AI_stats_measurement.Backend.Services;
 using AI_stats_measurement.Clients;
@@ -81,7 +82,7 @@ builder.Services.AddScoped<ILlmQuerier, GeminiWebSearchQuerier>();
 builder.Services.AddScoped<ILlmQuerier, GrokQuerier>();
 builder.Services.AddScoped<ILlmQuerier, GrokWebSearchQuerier>();
 
-builder.Services.AddScoped<LlmAggregator>();
+builder.Services.AddScoped<ILlmAggregator, LlmAggregator>();
 
 builder.Services.AddScoped<FactChecker>(sp =>
     new FactChecker(0.05m, "CBS")

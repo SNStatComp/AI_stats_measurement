@@ -1,11 +1,12 @@
-﻿using AI_stats_measurement.Backend.Models;
+﻿using AI_stats_measurement.Backend.Interface;
+using AI_stats_measurement.Backend.Models;
 using AI_stats_measurement.Data;
 using AI_stats_measurement.Interface;
 using Microsoft.EntityFrameworkCore;
 
 namespace AI_stats_measurement.Services
 {
-    public class LlmAggregator
+    public class LlmAggregator : ILlmAggregator
     {
         private readonly IEnumerable<ILlmQuerier> _queriers;
         private readonly AIMeasureDbContext _context;
@@ -29,7 +30,7 @@ namespace AI_stats_measurement.Services
             }
         }
 
-        public async Task<List<ModelResponse>> AskByPromptIdsAsync(List<int> promptIds, List<string> modelNames, Guid jobId, CancellationToken ct)
+        public virtual async Task<List<ModelResponse>> AskByPromptIdsAsync(List<int> promptIds, List<string> modelNames, Guid jobId, CancellationToken ct)
         {
             var tasks = new List<Task<ModelResponse>>();
 

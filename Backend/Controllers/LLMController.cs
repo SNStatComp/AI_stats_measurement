@@ -72,10 +72,17 @@ namespace AI_stats_measurement.Controllers
 
         [Authorize]
         [HttpPost("recalculate")]
-        public async Task<ActionResult<List<ExportRow>>> Recalculate([FromBody] List<int> promptIds, CancellationToken ct)
+        public IActionResult Recalculate(CancellationToken ct)
         {
-            var result = await _evaluationPipeline.RecalculateAsync(ct);
-            return Ok(result);
+            _ = Task.Run(async () =>
+            {
+                using var scope = HttpContext.RequestServices.CreateScope();
+                var pipeline = scope.ServiceProvider.GetRequiredService<EvaluationPipeline>();
+
+                await pipeline.RecalculateAsync(CancellationToken.None);
+            });
+
+            return Accepted(new { message = "Recalculation started" });
         }
 
         public class RunRequest
