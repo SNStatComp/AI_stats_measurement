@@ -1,13 +1,13 @@
 export function getResultTheme(name: string) {
-  const lowerName = name.toLowerCase()
+  const value = (name ?? '').toLowerCase()
 
-  if (lowerName.includes('cbs')) {
+  if (value.includes('cbs')) {
     return {
       color: '#0580a1',
     }
   }
 
-  if (lowerName.includes('oecd')) {
+  if (value.includes('oecd')) {
     return {
       color: '#101d40',
     }
