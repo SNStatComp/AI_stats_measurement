@@ -103,7 +103,7 @@ namespace AI_stats_measurement.Backend.Controllers
             return Ok(metrics);
         }
 
-        [HttpPost("weekly/{groupBy}")]
+        [HttpPost("analytics/weekly/{groupBy}")]
         public async Task<ActionResult<Dictionary<string, MetricsOverTimeDto>>> GetWeeklyMetrics(
     string groupBy,
     [FromBody] MetricsFilterDto filter)
