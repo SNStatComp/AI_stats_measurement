@@ -5,8 +5,8 @@ namespace AI_stats_measurement.Backend.Dto
 {
     public class MetricsFilterDto 
     {
-        public string? Nsi { get; set; }
-        public string? Llm { get; set; }
-        public string? Theme { get; set; }
+        public List<string>? Nsis { get; set; }
+        public List<string>? Llms { get; set; }
+        public List<string>? Themes { get; set; }
     }
 }

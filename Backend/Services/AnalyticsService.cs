@@ -8,23 +8,12 @@ namespace AI_stats_measurement.Backend.Services
     {
         public AnalyticsService() { }
 
-        public List<DashboardMetricsByNsiDto> GetMetricsPerNsi(List<FactCheckResult> results, string? nsi, string? llm, string? theme)
+        private List<DashboardMetricsByNsiDto> GetMetricsGrouped( List<FactCheckResult> results,List<string>? nsis,List<string>? llms,List<string>? themes,Func<FactCheckResult, string> groupSelector)
         {
-            var filtered = ApplyFilters(results, null, llm, theme);
-
-            if (!string.IsNullOrWhiteSpace(nsi))
-            {
-                var nsiResults = filtered
-                    .Where(r => r.ParsedModelResponse.ModelResponse.Prompt.Provider == nsi)
-                    .ToList();
-
-                var sources = GetMostCitedSources(nsiResults);
-
-                return new List<DashboardMetricsByNsiDto>{MapToMetricsDto(nsi, nsiResults, sources)};
-            }
+            var filtered = ApplyFilters(results, nsis, llms, themes);
 
             return filtered
-                .GroupBy(r => r.ParsedModelResponse.ModelResponse.Prompt.Provider)
+                .GroupBy(groupSelector)
                 .Select(group =>
                 {
                     var groupResults = group.ToList();
@@ -35,36 +24,36 @@ namespace AI_stats_measurement.Backend.Services
                 .ToList();
         }
 
-        public List<DashboardMetricsByNsiDto> GetMetricsPerModel(List<FactCheckResult> results,string? nsi, string? llm, string? theme)
+        public List<DashboardMetricsByNsiDto> GetMetricsPerNsi(List<FactCheckResult> results,List<string>? nsis,List<string>? llms,List<string>? themes)
         {
-            var filtered = ApplyFilters(results, nsi, llm, theme);
-
-            return filtered
-                .GroupBy(r => r.ParsedModelResponse.ModelResponse.Provider)
-                .Select(group =>
-                {
-                    var groupResults = group.ToList();
-                    var sources = GetMostCitedSources(groupResults);
-
-                    return MapToMetricsDto(group.Key, groupResults, sources);
-                })
-                .ToList();
+            return GetMetricsGrouped(
+                results,
+                nsis,
+                llms,
+                themes,
+                r => r.ParsedModelResponse.ModelResponse.Prompt.Provider
+            );
+        }
+        public List<DashboardMetricsByNsiDto> GetMetricsPerTheme( List<FactCheckResult> results, List<string>? nsis, List<string>? llms,List<string>? themes)
+        {
+            return GetMetricsGrouped(
+                results,
+                nsis,
+                llms,
+                themes,
+                r => r.ParsedModelResponse.ModelResponse.Prompt.Theme
+            );
         }
 
-        public List<DashboardMetricsByNsiDto> GetMetricsPerTheme(List<FactCheckResult> results, string? nsi, string? llm, string? theme)
-            {
-            var filtered = ApplyFilters(results, nsi, llm, theme);
-
-            return filtered
-                .GroupBy(r => r.ParsedModelResponse.ModelResponse.Prompt.Theme)
-                .Select(group =>
-                {
-                    var groupResults = group.ToList();
-                    var sources = GetMostCitedSources(groupResults);
-
-                    return MapToMetricsDto(group.Key, groupResults, sources);
-                })
-                .ToList();
+        public List<DashboardMetricsByNsiDto> GetMetricsPerModel( List<FactCheckResult> results,List<string>? nsis, List<string>? llms,List<string>? themes)
+        {
+            return GetMetricsGrouped(
+                results,
+                nsis,
+                llms,
+                themes,
+                r => r.ParsedModelResponse.ModelResponse.Provider
+            );
         }
 
         private DashboardMetricsByNsiDto MapToMetricsDto(string label, List<FactCheckResult> results, List<SourceCount> sources)
@@ -264,15 +253,20 @@ namespace AI_stats_measurement.Backend.Services
             };
         }
 
-        private List<FactCheckResult> ApplyFilters(List<FactCheckResult> factCheckResults, string? filterByNSI, string? filterByLLM, string? filterByTheme)
+        private List<FactCheckResult> ApplyFilters(List<FactCheckResult> factCheckResults,List<string>? filterByNsis, List<string>? filterByLlms,List<string>? filterByThemes)
         {
             return factCheckResults.Where(r =>
                 !r.Abstained &&
-                (string.IsNullOrWhiteSpace(filterByNSI) ||
-                 r.ParsedModelResponse.ModelResponse.Prompt.Provider == filterByNSI) &&
-                MatchesLlmGroup(r.ParsedModelResponse.ModelResponse.Provider, filterByLLM) &&
-                (string.IsNullOrWhiteSpace(filterByTheme) ||
-                 r.ParsedModelResponse.ModelResponse.Prompt.Theme == filterByTheme)
+
+                (filterByNsis == null || filterByNsis.Count == 0 ||
+                 filterByNsis.Contains(r.ParsedModelResponse.ModelResponse.Prompt.Provider)) &&
+
+                (filterByLlms == null || filterByLlms.Count == 0 ||
+                 filterByLlms.Any(llm =>
+                     MatchesLlmGroup(r.ParsedModelResponse.ModelResponse.Provider, llm))) &&
+
+                (filterByThemes == null || filterByThemes.Count == 0 ||
+                 filterByThemes.Contains(r.ParsedModelResponse.ModelResponse.Prompt.Theme))
             ).ToList();
         }
 
@@ -292,109 +286,6 @@ namespace AI_stats_measurement.Backend.Services
                 .OrderByDescending(x => x.Count)
                 .Take(5)
                 .ToList();
-        }
-
-        private List<SourceCount> GetMostCitedDatasets(List<FactCheckResult> results)
-        {
-            return results
-                .Where(r => r.ParsedModelResponse != null)
-                .SelectMany(r => r.ParsedModelResponse.ParsedModelResponseSources ?? [])
-                .Where(ps => ps.Source != null && !string.IsNullOrWhiteSpace(ps.Source.Url))
-                .Select(ps => ExtractDatasetKey(ps.Source.Url!))
-                .Where(x => !string.IsNullOrWhiteSpace(x))
-                .GroupBy(dataset => dataset)
-                .Select(g => new SourceCount
-                {
-                    Hostname = g.Key,
-                    Count = g.Count()
-                })
-                .OrderByDescending(x => x.Count)
-                .Take(5)
-                .ToList();
-        }
-
-        private string? ExtractDatasetKey(string url)
-        {
-            if (!Uri.TryCreate(url, UriKind.Absolute, out var uri))
-                return null;
-
-            var host = uri.Host.ToLowerInvariant();
-            var segments = uri.AbsolutePath
-                .Split('/', StringSplitOptions.RemoveEmptyEntries);
-
-            // CBS detail: /detail/83648NED
-            if (host.Contains("cbs.nl"))
-            {
-                var detailIndex = Array.FindIndex(segments,
-                    s => s.Equals("detail", StringComparison.OrdinalIgnoreCase));
-
-                if (detailIndex >= 0 && detailIndex + 1 < segments.Length)
-                {
-                    return $"CBS:{segments[detailIndex + 1]}";
-                }
-
-                // fragment parsing
-                var fragment = uri.Fragment;
-
-                if (!string.IsNullOrWhiteSpace(fragment))
-                {
-                    var datasetMatch = System.Text.RegularExpressions.Regex.Match(
-                        fragment,
-                        @"dataset\/([A-Za-z0-9_]+)",
-                        System.Text.RegularExpressions.RegexOptions.IgnoreCase,
-                        TimeSpan.FromMilliseconds(100));
-
-                    if (datasetMatch.Success)
-                    {
-                        return $"CBS:{datasetMatch.Groups[1].Value}";
-                    }
-
-                    var tidMatch = System.Text.RegularExpressions.Regex.Match(
-                        fragment,
-                        @"tid=([A-Za-z0-9_]+)",
-                        System.Text.RegularExpressions.RegexOptions.IgnoreCase,
-                        TimeSpan.FromMilliseconds(100));
-
-                    if (tidMatch.Success)
-                    {
-                        return $"CBS:{tidMatch.Groups[1].Value}";
-                    }
-                }
-
-                return null;
-            }
-
-            // Statbank Denmark
-            if (host.Contains("statbank.dk"))
-            {
-                if (segments.Length > 0)
-                {
-                    return $"StatbankDK:{segments[0].ToUpperInvariant()}";
-                }
-
-                return null;
-            }
-
-            // OECD
-            if (host.Contains("oecd.org"))
-            {
-                var query = uri.Query;
-
-                var match = System.Text.RegularExpressions.Regex.Match(
-                    query,
-                    @"df\[id\]=([^&]+)",
-                    System.Text.RegularExpressions.RegexOptions.IgnoreCase,
-                    TimeSpan.FromMilliseconds(100));
-
-                if (match.Success)
-                {
-                    return $"OECD:{Uri.UnescapeDataString(match.Groups[1].Value)}";
-                }
-
-                return null;
-            }
-
-            return null;
         }
 
         private static bool MatchesLlmGroup(string provider, string? llmGroup)
@@ -422,9 +313,9 @@ namespace AI_stats_measurement.Backend.Services
             return provider.StartsWith(llmGroup, StringComparison.OrdinalIgnoreCase);
         }
 
-        private Dictionary<string, MetricsOverTimeDto> GetWeeklyMetricsGrouped(List<FactCheckResult> results,string? nsi,string? llm,string? theme,Func<FactCheckResult, string> groupSelector)
+        private Dictionary<string, MetricsOverTimeDto> GetWeeklyMetricsGrouped(List<FactCheckResult> results, List<string>? nsis, List<string>? llms, List<string>? themes, Func<FactCheckResult, string> groupSelector)
         {
-            var filtered = ApplyFilters(results, nsi, llm, theme);
+            var filtered = ApplyFilters(results, nsis, llms, themes);
 
             return filtered
                 .GroupBy(groupSelector)
@@ -466,35 +357,35 @@ namespace AI_stats_measurement.Backend.Services
                     });
         }
 
-        public Dictionary<string, MetricsOverTimeDto> GetWeeklyMetricsPerNsi(List<FactCheckResult> results,string? nsi,string? llm,string? theme)
+        public Dictionary<string, MetricsOverTimeDto> GetWeeklyMetricsPerNsi(List<FactCheckResult> results, List<string>? nsis, List<string>? llms, List<string>? themes)
         {
             return GetWeeklyMetricsGrouped(
                 results,
-                nsi,
-                llm,
-                theme,
+                nsis,
+                llms,
+                themes,
                 r => r.ParsedModelResponse.ModelResponse.Prompt.Provider
             );
         }
 
-        public Dictionary<string, MetricsOverTimeDto> GetWeeklyMetricsPerModel(List<FactCheckResult> results,string? nsi,string? llm,string? theme)
+        public Dictionary<string, MetricsOverTimeDto> GetWeeklyMetricsPerModel(List<FactCheckResult> results, List<string>? nsis, List<string>? llms, List<string>? themes)
         {
             return GetWeeklyMetricsGrouped(
                 results,
-                nsi,
-                llm,
-                theme,
+                nsis,
+                llms,
+                themes,
                 r => r.ParsedModelResponse.ModelResponse.Provider
             );
         }
 
-        public Dictionary<string, MetricsOverTimeDto> GetWeeklyMetricsPerTheme(List<FactCheckResult> results,string? nsi,string? llm,string? theme)
+        public Dictionary<string, MetricsOverTimeDto> GetWeeklyMetricsPerTheme(List<FactCheckResult> results, List<string>? nsis, List<string>? llms, List<string>? themes)
         {
             return GetWeeklyMetricsGrouped(
                 results,
-                nsi,
-                llm,
-                theme,
+                nsis,
+                llms,
+                themes,
                 r => r.ParsedModelResponse.ModelResponse.Prompt.Theme
             );
         }

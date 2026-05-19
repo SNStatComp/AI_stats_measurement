@@ -2,12 +2,12 @@ import { useEffect, useState } from 'react'
 import { API_BASE_URL } from '../../config'
 
 type FiltersProps = {
-  selectedNsi: string
-  selectedLlm: string
-  selectedTheme: string
-  onNsiChange: (value: string) => void
-  onLlmChange: (value: string) => void
-  onThemeChange: (value: string) => void
+  selectedNsis: string[]
+  selectedLlms: string[]
+  selectedThemes: string[]
+  onNsisChange: (value: string[]) => void
+  onLlmsChange: (value: string[]) => void
+  onThemesChange: (value: string[]) => void
 }
 
 const nsiOptions = ['CBS', 'OECD', 'StatBank Denmark']
@@ -27,12 +27,12 @@ const llmOptions = [
 ]
 
 export function Filters({
-  selectedNsi,
-  selectedLlm,
-  selectedTheme,
-  onNsiChange,
-  onLlmChange,
-  onThemeChange
+  selectedNsis,
+  selectedLlms,
+  selectedThemes,
+  onNsisChange,
+  onLlmsChange,
+  onThemesChange
 }: FiltersProps) {
   const [themes, setThemes] = useState<string[]>([])
 
@@ -59,6 +59,10 @@ export function Filters({
     fontSize: '14px'
   }
 
+  function getSelectedValues(e: React.ChangeEvent<HTMLSelectElement>) {
+  return Array.from(e.target.selectedOptions).map(option => option.value)
+}
+
   return (
     <div
       style={{
@@ -74,17 +78,17 @@ export function Filters({
         </label>
 
         <select
-          value={selectedNsi}
-          onChange={(e) => onNsiChange(e.target.value)}
-          style={selectStyle}
-        >
-          <option value="">All NSI's</option>
-          {nsiOptions.map((nsi) => (
-            <option key={nsi} value={nsi}>
-              {nsi}
-            </option>
-          ))}
-        </select>
+  multiple
+  value={selectedNsis}
+  onChange={(e) => onNsisChange(getSelectedValues(e))}
+  style={selectStyle}
+>
+  {nsiOptions.map((nsi) => (
+    <option key={nsi} value={nsi}>
+      {nsi}
+    </option>
+  ))}
+</select>
       </div>
 
       <div style={cardStyle}>
@@ -93,17 +97,17 @@ export function Filters({
         </label>
 
         <select
-          value={selectedLlm}
-          onChange={(e) => onLlmChange(e.target.value)}
-          style={selectStyle}
-        >
-          <option value="">All LLMs</option>
-          {llmOptions.map((llm) => (
-            <option key={llm} value={llm}>
-              {llm}
-            </option>
-          ))}
-        </select>
+  multiple
+  value={selectedLlms}
+  onChange={(e) => onLlmsChange(getSelectedValues(e))}
+  style={selectStyle}
+>
+  {llmOptions.map((llm) => (
+    <option key={llm} value={llm}>
+      {llm}
+    </option>
+  ))}
+</select>
       </div>
 
       <div style={cardStyle}>
@@ -112,17 +116,17 @@ export function Filters({
         </label>
 
         <select
-          value={selectedTheme}
-          onChange={(e) => onThemeChange(e.target.value)}
-          style={selectStyle}
-        >
-          <option value="">All themes</option>
-          {themes.map((theme) => (
-            <option key={theme} value={theme}>
-              {theme}
-            </option>
-          ))}
-        </select>
+  multiple
+  value={selectedThemes}
+  onChange={(e) => onThemesChange(getSelectedValues(e))}
+  style={selectStyle}
+>
+  {themes.map((theme) => (
+    <option key={theme} value={theme}>
+      {theme}
+    </option>
+  ))}
+</select>
       </div>
     </div>
   )

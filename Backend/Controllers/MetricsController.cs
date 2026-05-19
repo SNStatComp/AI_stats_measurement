@@ -40,9 +40,9 @@ namespace AI_stats_measurement.Backend.Controllers
 
             var metrics = _analyticsService.GetMetricsPerNsi(
                 facts,
-                filter.Nsi,
-                filter.Llm,
-                filter.Theme
+                filter.Nsis,
+                filter.Llms,
+                filter.Themes
             );
 
             return Ok(metrics);
@@ -68,9 +68,9 @@ namespace AI_stats_measurement.Backend.Controllers
 
             var metrics = _analyticsService.GetMetricsPerModel(
                 facts,
-                filter.Nsi,
-                filter.Llm,
-                filter.Theme
+                filter.Nsis,
+                filter.Llms,
+                filter.Themes
             );
 
             return Ok(metrics);
@@ -95,9 +95,9 @@ namespace AI_stats_measurement.Backend.Controllers
 
             var metrics = _analyticsService.GetMetricsPerTheme(
                 facts,
-                filter.Nsi,
-                filter.Llm,
-                filter.Theme
+                filter.Nsis,
+                filter.Llms,
+                filter.Themes
             );
 
             return Ok(metrics);
@@ -119,13 +119,13 @@ namespace AI_stats_measurement.Backend.Controllers
             var result = groupBy.ToLower() switch
             {
                 "nsi" => _analyticsService.GetWeeklyMetricsPerNsi(
-                    facts, filter.Nsi, filter.Llm, filter.Theme),
+                    facts, filter.Nsis, filter.Llms, filter.Themes),
 
                 "model" => _analyticsService.GetWeeklyMetricsPerModel(
-                    facts, filter.Nsi, filter.Llm, filter.Theme),
+                    facts, filter.Nsis, filter.Llms, filter.Themes),
 
                 "theme" => _analyticsService.GetWeeklyMetricsPerTheme(
-                    facts, filter.Nsi, filter.Llm, filter.Theme),
+                    facts, filter.Nsis, filter.Llms, filter.Themes),
 
                 _ => null
             };
