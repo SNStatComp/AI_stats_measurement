@@ -21,7 +21,7 @@ namespace AI_stats_measurement.Backend.Controllers
             _analyticsService = analyticsService;
         }
 
-        [HttpPost]
+        [HttpPost("analytics/metrics-per-nsi")]
         public ActionResult<List<DashboardMetricsByNsiDto>> GetMetrics([FromBody] MetricsFilterDto filter)
         {
             var factsQuery = _context.FactCheckResults
@@ -48,8 +48,38 @@ namespace AI_stats_measurement.Backend.Controllers
             return Ok(metrics);
         }
 
-        [HttpPost("weekly")]
-        public async Task<ActionResult<Dictionary<string, MetricsOverTimeDto>>> GetWeeklyMetrics([FromBody] MetricsFilterDto filter)
+
+        [HttpPost("analytics/metrics-per-model")]
+        public ActionResult<List<DashboardMetricsByNsiDto>> GetMetricsPerModel([FromBody] MetricsFilterDto filter)
+        {
+            var factsQuery = _context.FactCheckResults
+                .Include(f => f.ParsedModelResponse)
+                    .ThenInclude(pmr => pmr.ParsedModelResponseSources)
+                        .ThenInclude(pmrs => pmrs.Source)
+                .Include(f => f.ParsedModelResponse)
+                    .ThenInclude(pmr => pmr.ModelResponse)
+                        .ThenInclude(mr => mr.Prompt)
+                .AsQueryable();
+
+            // Filter out records with exceptions in the model response
+            factsQuery = factsQuery.Where(f => f.ParsedModelResponse.ModelResponse.Exception == null);
+
+            var facts = factsQuery.ToList();
+
+            var metrics = _analyticsService.GetMetricsPerModel(
+                facts,
+                filter.Nsi,
+                filter.Llm,
+                filter.Theme
+            );
+
+            return Ok(metrics);
+        }
+
+        [HttpPost("weekly/{groupBy}")]
+        public async Task<ActionResult<Dictionary<string, MetricsOverTimeDto>>> GetWeeklyMetrics(
+    string groupBy,
+    [FromBody] MetricsFilterDto filter)
         {
             var facts = await _context.FactCheckResults
                 .Include(f => f.ParsedModelResponse)
@@ -58,14 +88,27 @@ namespace AI_stats_measurement.Backend.Controllers
                 .Include(f => f.ParsedModelResponse)
                     .ThenInclude(pmr => pmr.ModelResponse)
                         .ThenInclude(mr => mr.Prompt)
+                .Where(f => f.ParsedModelResponse.ModelResponse.Exception == null)
                 .ToListAsync();
 
-            var result = _analyticsService.GetWeeklyMetricsPerNsi(
-                facts,
-                filter.Nsi,
-                filter.Llm,
-                filter.Theme
-            );
+            var result = groupBy.ToLower() switch
+            {
+                "nsi" => _analyticsService.GetWeeklyMetricsPerNsi(
+                    facts, filter.Nsi, filter.Llm, filter.Theme),
+
+                "model" => _analyticsService.GetWeeklyMetricsPerModel(
+                    facts, filter.Nsi, filter.Llm, filter.Theme),
+
+                "theme" => _analyticsService.GetWeeklyMetricsPerTheme(
+                    facts, filter.Nsi, filter.Llm, filter.Theme),
+
+                _ => null
+            };
+
+            if (result == null)
+            {
+                return BadRequest("Invalid groupBy value. Use: nsi, model, or theme.");
+            }
 
             return Ok(result);
         }

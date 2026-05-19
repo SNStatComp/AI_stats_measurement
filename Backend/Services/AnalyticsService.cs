@@ -20,14 +20,43 @@ namespace AI_stats_measurement.Backend.Services
 
                 var sources = GetMostCitedSources(nsiResults);
 
-                return new List<DashboardMetricsByNsiDto>
-        {
-            MapToMetricsDto(nsi, nsiResults, sources)
-        };
+                return new List<DashboardMetricsByNsiDto>{MapToMetricsDto(nsi, nsiResults, sources)};
             }
 
             return filtered
                 .GroupBy(r => r.ParsedModelResponse.ModelResponse.Prompt.Provider)
+                .Select(group =>
+                {
+                    var groupResults = group.ToList();
+                    var sources = GetMostCitedSources(groupResults);
+
+                    return MapToMetricsDto(group.Key, groupResults, sources);
+                })
+                .ToList();
+        }
+
+        public List<DashboardMetricsByNsiDto> GetMetricsPerModel(List<FactCheckResult> results,string? nsi, string? llm, string? theme)
+        {
+            var filtered = ApplyFilters(results, nsi, llm, theme);
+
+            return filtered
+                .GroupBy(r => r.ParsedModelResponse.ModelResponse.Provider)
+                .Select(group =>
+                {
+                    var groupResults = group.ToList();
+                    var sources = GetMostCitedSources(groupResults);
+
+                    return MapToMetricsDto(group.Key, groupResults, sources);
+                })
+                .ToList();
+        }
+
+        public List<DashboardMetricsByNsiDto> GetMetricsPerTheme(List<FactCheckResult> results, string? nsi, string? llm, string? theme)
+            {
+            var filtered = ApplyFilters(results, nsi, llm, theme);
+
+            return filtered
+                .GroupBy(r => r.ParsedModelResponse.ModelResponse.Prompt.Theme)
                 .Select(group =>
                 {
                     var groupResults = group.ToList();
@@ -46,7 +75,7 @@ namespace AI_stats_measurement.Backend.Services
 
             return new DashboardMetricsByNsiDto
             {
-                Nsi = nsi,
+                Label = nsi,
                 AccuracyScore = accuracy.Score,
                 ConsistencyScore = consistency.Score,
                 FindabilityScore = findability.Score,
@@ -57,6 +86,7 @@ namespace AI_stats_measurement.Backend.Services
                 TopSources = sources
             };
         }
+
 
         private double ComputeRelativeMad(List<FactCheckResult> promptResults)
         {
@@ -275,7 +305,7 @@ namespace AI_stats_measurement.Backend.Services
                 .GroupBy(dataset => dataset)
                 .Select(g => new SourceCount
                 {
-                    Hostname = g.Key, 
+                    Hostname = g.Key,
                     Count = g.Count()
                 })
                 .OrderByDescending(x => x.Count)
@@ -331,7 +361,7 @@ namespace AI_stats_measurement.Backend.Services
                     }
                 }
 
-                return null; 
+                return null;
             }
 
             // Statbank Denmark
@@ -364,7 +394,7 @@ namespace AI_stats_measurement.Backend.Services
                 return null;
             }
 
-            return null; 
+            return null;
         }
 
         private static bool MatchesLlmGroup(string provider, string? llmGroup)
@@ -375,8 +405,8 @@ namespace AI_stats_measurement.Backend.Services
             if (llmGroup.Equals("websearch disabled", StringComparison.OrdinalIgnoreCase))
             {
                 return provider.StartsWith("gemini-2.5-flash-lite", StringComparison.OrdinalIgnoreCase)
-                    || provider.StartsWith("gpt-4o-mini", StringComparison.OrdinalIgnoreCase) 
-                    || provider.StartsWith("grok-4.3", StringComparison.OrdinalIgnoreCase) 
+                    || provider.StartsWith("gpt-4o-mini", StringComparison.OrdinalIgnoreCase)
+                    || provider.StartsWith("grok-4.3", StringComparison.OrdinalIgnoreCase)
                     || provider.StartsWith("grok-4-1-fast-non-reasoning", StringComparison.OrdinalIgnoreCase);
             }
 
@@ -392,16 +422,12 @@ namespace AI_stats_measurement.Backend.Services
             return provider.StartsWith(llmGroup, StringComparison.OrdinalIgnoreCase);
         }
 
-        public Dictionary<string, MetricsOverTimeDto> GetWeeklyMetricsPerNsi(
-            List<FactCheckResult> results,
-            string? nsi,
-            string? llm,
-            string? theme)
+        private Dictionary<string, MetricsOverTimeDto> GetWeeklyMetricsGrouped(List<FactCheckResult> results,string? nsi,string? llm,string? theme,Func<FactCheckResult, string> groupSelector)
         {
             var filtered = ApplyFilters(results, nsi, llm, theme);
 
             return filtered
-                .GroupBy(r => r.ParsedModelResponse.ModelResponse.Prompt.Provider)
+                .GroupBy(groupSelector)
                 .ToDictionary(
                     g => g.Key,
                     g =>
@@ -411,6 +437,7 @@ namespace AI_stats_measurement.Backend.Services
                             {
                                 var date = r.ParsedModelResponse.ModelResponse.CreatedUtc.Date;
                                 var diff = ((int)date.DayOfWeek + 6) % 7;
+
                                 return date.AddDays(-diff);
                             })
                             .OrderBy(x => x.Key)
@@ -436,9 +463,42 @@ namespace AI_stats_measurement.Backend.Services
                                 Value = ComputeFindabilityMetric(w.ToList()).Score
                             }).ToList()
                         };
-                    }
-                );
+                    });
         }
+
+        public Dictionary<string, MetricsOverTimeDto> GetWeeklyMetricsPerNsi(List<FactCheckResult> results,string? nsi,string? llm,string? theme)
+        {
+            return GetWeeklyMetricsGrouped(
+                results,
+                nsi,
+                llm,
+                theme,
+                r => r.ParsedModelResponse.ModelResponse.Prompt.Provider
+            );
+        }
+
+        public Dictionary<string, MetricsOverTimeDto> GetWeeklyMetricsPerModel(List<FactCheckResult> results,string? nsi,string? llm,string? theme)
+        {
+            return GetWeeklyMetricsGrouped(
+                results,
+                nsi,
+                llm,
+                theme,
+                r => r.ParsedModelResponse.ModelResponse.Provider
+            );
+        }
+
+        public Dictionary<string, MetricsOverTimeDto> GetWeeklyMetricsPerTheme(List<FactCheckResult> results,string? nsi,string? llm,string? theme)
+        {
+            return GetWeeklyMetricsGrouped(
+                results,
+                nsi,
+                llm,
+                theme,
+                r => r.ParsedModelResponse.ModelResponse.Prompt.Theme
+            );
+        }
+
 
         public class MetricResultDto
         {

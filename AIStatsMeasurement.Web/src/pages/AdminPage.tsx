@@ -39,11 +39,16 @@ export default function AdminPage() {
   };
 
   return (
-    <div className="admin-page">
+  <div className="admin-page">
+    <h1 className="admin-title">Admin Panel</h1>
+
+    <div className="admin-grid">
       <div className="admin-card">
-        <h1>Admin Panel</h1>
+        <h2>Recalculate Model Responses</h2>
+
         <p>
-          Recalculate all prompts and model statistics.
+          Trigger a full recalculation of all model responses using the
+          current parsing, scoring and evaluation logic.
         </p>
 
         <button
@@ -51,12 +56,55 @@ export default function AdminPage() {
           disabled={loading}
           className="recalculate-button"
         >
-          {loading ? "Recalculating..." : "Recalculate All Prompts"}
+          {loading
+            ? "Recalculating..."
+            : "Recalculate All Model Responses"}
         </button>
 
-        {message && <p className="success-message">{message}</p>}
-        {error && <p className="error-message">{error}</p>}
+        {message && (
+          <p className="success-message">{message}</p>
+        )}
+
+        {error && (
+          <p className="error-message">{error}</p>
+        )}
+      </div>
+
+      <div className="admin-card">
+        <h2>Export Data</h2>
+
+        <p>
+          Export all model responses, prompts, parsed responses
+          and sources into a transferable dataset.
+        </p>
+
+        <button
+          onClick={() =>
+            alert("Export functionality not implemented yet")
+          }
+          className="recalculate-button"
+        >
+          Export All Data
+        </button>
+      </div>
+
+      <div className="admin-card">
+        <h2>Import Data</h2>
+
+        <p>
+          Import a previously exported dataset into the system.
+        </p>
+
+        <button
+          onClick={() =>
+            alert("Import functionality not implemented yet")
+          }
+          className="recalculate-button"
+        >
+          Import Data
+        </button>
       </div>
     </div>
-  );
+  </div>
+);
 }
