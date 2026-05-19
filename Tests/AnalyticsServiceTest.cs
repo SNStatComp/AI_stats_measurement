@@ -93,7 +93,7 @@ namespace AI_stats_measurement.Tests
             CreateResult(2, "CBS", "gpt-4o-mini", 90, 100, false, new DateTime(2026, 1, 12, 0, 0, 0, DateTimeKind.Utc)),
         };
 
-            var weekly = service.GetWeeklyMetrics(results, "CBS", null, null);
+            var weekly = service.GetWeeklyMetricsPerNsi(results, "CBS", null, null);
 
             Assert.True(weekly.ContainsKey("CBS"));
             Assert.Equal(2, weekly["CBS"].Findability.Count);

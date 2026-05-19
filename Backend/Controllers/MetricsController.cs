@@ -76,6 +76,33 @@ namespace AI_stats_measurement.Backend.Controllers
             return Ok(metrics);
         }
 
+        [HttpPost("analytics/metrics-per-theme")]
+        public ActionResult<List<DashboardMetricsByNsiDto>> GetMetricsPerTheme([FromBody] MetricsFilterDto filter)
+        {
+            var factsQuery = _context.FactCheckResults
+                .Include(f => f.ParsedModelResponse)
+                    .ThenInclude(pmr => pmr.ParsedModelResponseSources)
+                        .ThenInclude(pmrs => pmrs.Source)
+                .Include(f => f.ParsedModelResponse)
+                    .ThenInclude(pmr => pmr.ModelResponse)
+                        .ThenInclude(mr => mr.Prompt)
+                .AsQueryable();
+
+            // Filter out records with exceptions in the model response
+            factsQuery = factsQuery.Where(f => f.ParsedModelResponse.ModelResponse.Exception == null);
+
+            var facts = factsQuery.ToList();
+
+            var metrics = _analyticsService.GetMetricsPerTheme(
+                facts,
+                filter.Nsi,
+                filter.Llm,
+                filter.Theme
+            );
+
+            return Ok(metrics);
+        }
+
         [HttpPost("weekly/{groupBy}")]
         public async Task<ActionResult<Dictionary<string, MetricsOverTimeDto>>> GetWeeklyMetrics(
     string groupBy,
