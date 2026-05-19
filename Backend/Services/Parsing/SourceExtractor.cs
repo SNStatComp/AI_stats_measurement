@@ -45,8 +45,8 @@ namespace AI_stats_measurement.Backend.Services.Parsing
 
                 sources.Add(new ExtractedSource
                 {
-                    Name = name,
-                    Url = url,
+                    Name = Truncate(name, 512),
+                    Url = Truncate(url, 2048),
                     Type = SourceClassifier.GetSourceType(url)
                 });
             }
@@ -63,8 +63,8 @@ namespace AI_stats_measurement.Backend.Services.Parsing
 
                 sources.Add(new ExtractedSource
                 {
-                    Name = UrlHelper.GetSourceName(url),
-                    Url = url,
+                    Name = Truncate(UrlHelper.GetSourceName(url), 512),
+                    Url = Truncate(url, 2048),
                     Type = SourceClassifier.GetSourceType(url)
                 });
             }
@@ -97,7 +97,7 @@ namespace AI_stats_measurement.Backend.Services.Parsing
 
                 sources.Add(new ExtractedSource
                 {
-                    Name = sourceText,
+                    Name = Truncate(sourceText, 512),
                     Url = null,
                     Type = null
                 });
@@ -111,7 +111,17 @@ namespace AI_stats_measurement.Backend.Services.Parsing
             if (!normalized.StartsWith("http", StringComparison.OrdinalIgnoreCase))
                 normalized = "https://" + normalized;
 
-            return normalized;
+            return Truncate(normalized, 2048)!;
+        }
+
+        private static string? Truncate(string? value, int maxLength)
+        {
+            if (string.IsNullOrEmpty(value))
+                return value;
+
+            return value.Length <= maxLength
+                ? value
+                : value[..maxLength];
         }
 
         private static string GetSourceLabel(ParserLanguage language)
