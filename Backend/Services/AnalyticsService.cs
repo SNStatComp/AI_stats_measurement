@@ -67,7 +67,7 @@ namespace AI_stats_measurement.Backend.Services
                 .ToList();
         }
 
-        private DashboardMetricsByNsiDto MapToMetricsDto(string nsi, List<FactCheckResult> results, List<SourceCount> sources)
+        private DashboardMetricsByNsiDto MapToMetricsDto(string label, List<FactCheckResult> results, List<SourceCount> sources)
         {
             var accuracy = ComputeAccuracyMetric(results);
             var consistency = ComputeConsistencyMetric(results);
@@ -75,7 +75,7 @@ namespace AI_stats_measurement.Backend.Services
 
             return new DashboardMetricsByNsiDto
             {
-                Label = nsi,
+                Label = label,
                 AccuracyScore = accuracy.Score,
                 ConsistencyScore = consistency.Score,
                 FindabilityScore = findability.Score,

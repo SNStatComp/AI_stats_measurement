@@ -22,7 +22,7 @@ export type SourceItem = {
 }
 
 export type AnalyticsResponse = {
-  nsi: string
+  label: string
   accuracyScore: number
   findabilityScore: number
   consistencyScore: number
@@ -213,10 +213,10 @@ function Analytics() {
         <div className="results-grid">
           {results.map((item) => (
           <ResultCard
-            key={item.nsi}
+            key={item.label}
             item={item}
             groupBy={groupBy}
-            chartData={chartData[item.nsi]}
+            chartData={chartData[item.label]}
           />
         ))}
         </div>

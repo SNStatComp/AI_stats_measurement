@@ -104,9 +104,7 @@ namespace AI_stats_measurement.Backend.Controllers
         }
 
         [HttpPost("analytics/weekly/{groupBy}")]
-        public async Task<ActionResult<Dictionary<string, MetricsOverTimeDto>>> GetWeeklyMetrics(
-    string groupBy,
-    [FromBody] MetricsFilterDto filter)
+        public async Task<ActionResult<Dictionary<string, MetricsOverTimeDto>>> GetWeeklyMetrics( string groupBy, [FromBody] MetricsFilterDto filter)
         {
             var facts = await _context.FactCheckResults
                 .Include(f => f.ParsedModelResponse)

@@ -21,7 +21,7 @@ type ResultCardProps = {
 }
 
 export function ResultCard({ item, chartData, groupBy }: ResultCardProps) {
-  const label = item.nsi
+  const label = item.label
   const theme = getResultTheme(label)
 
   const logo = logos[label]
