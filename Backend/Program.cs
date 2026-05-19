@@ -78,7 +78,7 @@ builder.Services.AddControllers();
 builder.Services.AddScoped<ILlmQuerier, ChatGPTQuerier>();
 builder.Services.AddScoped<ILlmQuerier, ChatGPTWebSearchQuerier>();
 builder.Services.AddScoped<ILlmQuerier, GeminiQuerier>();
-builder.Services.AddScoped<ILlmQuerier, GeminiWebSearchQuerier>();
+builder.Services.AddHttpClient<GrokWebSearchQuerier>();
 builder.Services.AddScoped<ILlmQuerier, GrokQuerier>();
 builder.Services.AddScoped<ILlmQuerier, GrokWebSearchQuerier>();
 

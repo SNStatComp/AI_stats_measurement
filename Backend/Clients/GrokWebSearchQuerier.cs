@@ -13,13 +13,13 @@ namespace AI_stats_measurement.Backend.Clients
 
         public string Name => "grok-4.20-0309-reasoning";
 
-        public GrokWebSearchQuerier(IConfiguration config)
+        public GrokWebSearchQuerier(HttpClient httpClient, IConfiguration config)
         {
-            _apiKey = config["LlmKeys:Grok"] ?? throw new InvalidOperationException("Missing Grok API key.");
-            _httpClient = new HttpClient
-            {
-                BaseAddress = new Uri("https://api.x.ai/")
-            };
+            _httpClient = httpClient;
+            _httpClient.BaseAddress = new Uri("https://api.x.ai/");
+
+            _apiKey = config["LlmKeys:Grok"]
+                ?? throw new InvalidOperationException("Missing Grok API key.");
         }
 
         public async Task<string> AskAsync(Prompt prompt, CancellationToken ct = default)
