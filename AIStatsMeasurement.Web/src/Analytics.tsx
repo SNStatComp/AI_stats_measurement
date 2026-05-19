@@ -50,6 +50,7 @@ function Analytics() {
   const [error, setError] = useState('')
   const [results, setResults] = useState<AnalyticsResponse[]>([])
   const [chartData, setChartData] = useState<MetricsPerNsi>({})
+  const [groupBy, setGroupBy] = useState<'nsi' | 'model' | 'theme'>('nsi')
 
   const handleSend = async () => {
     setIsLoading(true)
@@ -64,7 +65,15 @@ function Analytics() {
         theme: selectedTheme
       }
 
-      const metricsResponse = await fetch(`${API_BASE_URL}/api/metrics`, {
+      const endpoint =
+        groupBy === 'nsi'
+          ? '/api/analytics/metrics-per-nsi'
+          : groupBy === 'model'
+            ? '/api/analytics/metrics-per-model'
+            : '/api/analytics/metrics-per-theme'
+
+
+      const metricsResponse = await fetch(`${API_BASE_URL}${endpoint}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -79,7 +88,9 @@ function Analytics() {
 
       const metricsData: AnalyticsResponse[] = await metricsResponse.json()
 
-      const weeklyResponse = await fetch(`${API_BASE_URL}/api/metrics/weekly`, {
+      const weeklyEndpoint = `/api/analytics/weekly/${groupBy}`
+
+      const weeklyResponse = await fetch(`${API_BASE_URL}${weeklyEndpoint}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -110,6 +121,35 @@ function Analytics() {
   return (
     <div className="page-content">
       <h1 style={{ marginBottom: '24px' }}>Analytics</h1>
+
+      <div>
+  <label>
+    <input
+      type="radio"
+      checked={groupBy === 'nsi'}
+      onChange={() => setGroupBy('nsi')}
+    />
+    NSI
+  </label>
+
+  <label>
+    <input
+      type="radio"
+      checked={groupBy === 'model'}
+      onChange={() => setGroupBy('model')}
+    />
+    Model
+  </label>
+
+  <label>
+    <input
+      type="radio"
+      checked={groupBy === 'theme'}
+      onChange={() => setGroupBy('theme')}
+    />
+    Theme
+  </label>
+</div>
 
       <Filters
         selectedNsi={selectedNsi}
@@ -175,6 +215,7 @@ function Analytics() {
           <ResultCard
             key={item.nsi}
             item={item}
+            groupBy={groupBy}
             chartData={chartData[item.nsi]}
           />
         ))}

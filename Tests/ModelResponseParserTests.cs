@@ -224,8 +224,8 @@ public class ModelResponseParserTests
         var parsed = ModelResponseParser.ParseDutch(0, text);
 
         Assert.Equal(30300000m, parsed.Answer);
-    } 
-    
+    }
+
     [Fact]
     public void Parse_Returns_Zero_Ignore_Dates()
     {
@@ -284,5 +284,25 @@ public class ModelResponseParserTests
         var parsed = ModelResponseParser.ParseEnglish(0, text);
 
         Assert.Equal(0, parsed.Answer);
+    }
+
+    [Fact]
+    public void Parse_Returns_Answer_Ignore_Short_Dates_English()
+    {
+        var text = "(table BOL103, data as of 1 Jan 2020) Denmark had 366,472 occupied";
+
+        var parsed = ModelResponseParser.ParseEnglish(0, text);
+
+        Assert.Equal(366472m, parsed.Answer);
+    }
+
+    [Fact]
+    public void Parse_Returns_Answer_Approximately_English()
+    {
+        var text = "approximately 110,000–120,000";
+
+        var parsed = ModelResponseParser.ParseEnglish(0, text);
+
+        Assert.Equal(110000m, parsed.Answer);
     }
 }

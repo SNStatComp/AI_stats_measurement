@@ -60,8 +60,8 @@ namespace AI_stats_measurement.Tests
             var metrics = service.GetMetricsPerNsi(results, null, null, null);
 
             Assert.Equal(2, metrics.Count);
-            Assert.Contains(metrics, m => m.Nsi == "CBS");
-            Assert.Contains(metrics, m => m.Nsi == "OECD");
+            Assert.Contains(metrics, m => m.Label == "CBS");
+            Assert.Contains(metrics, m => m.Label == "OECD");
         }
 
         [Fact]
@@ -78,7 +78,7 @@ namespace AI_stats_measurement.Tests
             var metrics = service.GetMetricsPerNsi(results, "CBS", null, null);
 
             Assert.Single(metrics);
-            Assert.Equal("CBS", metrics[0].Nsi);
+            Assert.Equal("CBS", metrics[0].Label);
         }
 
        
@@ -93,7 +93,7 @@ namespace AI_stats_measurement.Tests
             CreateResult(2, "CBS", "gpt-4o-mini", 90, 100, false, new DateTime(2026, 1, 12, 0, 0, 0, DateTimeKind.Utc)),
         };
 
-            var weekly = service.GetWeeklyMetricsPerNsi(results, "CBS", null, null);
+            var weekly = service.GetWeeklyMetrics(results, "CBS", null, null);
 
             Assert.True(weekly.ContainsKey("CBS"));
             Assert.Equal(2, weekly["CBS"].Findability.Count);
