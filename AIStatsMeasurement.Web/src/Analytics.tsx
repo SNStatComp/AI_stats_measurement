@@ -43,9 +43,9 @@ export type MetricsOverTime = {
 type MetricsPerNsi = Record<string, MetricsOverTime>
 
 function Analytics() {
-  const [selectedNsi, setSelectedNsi] = useState('')
-  const [selectedLlm, setSelectedLlm] = useState('')
-  const [selectedTheme, setSelectedTheme] = useState('')
+  const [selectedNsis, setSelectedNsis] = useState<string[]>([])
+  const [selectedLlms, setSelectedLlms] = useState<string[]>([])
+  const [selectedThemes, setSelectedThemes] = useState<string[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
   const [results, setResults] = useState<AnalyticsResponse[]>([])
@@ -60,9 +60,9 @@ function Analytics() {
 
     try {
       const filterBody = {
-        nsi: selectedNsi,
-        llm: selectedLlm,
-        theme: selectedTheme
+        nsis: selectedNsis,
+        llms: selectedLlms,
+        themes: selectedThemes
       }
 
       const endpoint =
@@ -122,42 +122,65 @@ function Analytics() {
     <div className="page-content">
       <h1 style={{ marginBottom: '24px' }}>Analytics</h1>
 
-      <div>
-  <label>
-    <input
-      type="radio"
-      checked={groupBy === 'nsi'}
-      onChange={() => setGroupBy('nsi')}
-    />
-    NSI
-  </label>
+      <div
+  style={{
+    display: 'flex',
+    gap: '12px',
+    padding: '12px',
+    background: '#ffffff',
+    border: '1px solid #e2e8f0',
+    borderRadius: '16px',
+    boxShadow: '0 4px 14px rgba(15, 23, 42, 0.06)',
+    marginBottom: '20px',
+    width: 'fit-content'
+  }}
+>
+  {[
+    { value: 'nsi', label: 'NSI' },
+    { value: 'model', label: 'Model' },
+    { value: 'theme', label: 'Theme' }
+  ].map((option) => {
+    const active = groupBy === option.value
 
-  <label>
-    <input
-      type="radio"
-      checked={groupBy === 'model'}
-      onChange={() => setGroupBy('model')}
-    />
-    Model
-  </label>
+    return (
+      <label
+        key={option.value}
+        style={{
+          cursor: 'pointer',
+          padding: '10px 18px',
+          borderRadius: '12px',
+          fontWeight: 600,
+          transition: 'all 0.2s ease',
+          background: active ? '#2563eb' : '#f8fafc',
+          color: active ? 'white' : '#0f172a',
+          border: active
+            ? '1px solid #2563eb'
+            : '1px solid #e2e8f0',
+          boxShadow: active
+            ? '0 4px 10px rgba(37,99,235,0.25)'
+            : 'none'
+        }}
+      >
+        <input
+          type="radio"
+          checked={active}
+          onChange={() => setGroupBy(option.value as 'nsi' | 'model' | 'theme')}
+          style={{ display: 'none' }}
+        />
 
-  <label>
-    <input
-      type="radio"
-      checked={groupBy === 'theme'}
-      onChange={() => setGroupBy('theme')}
-    />
-    Theme
-  </label>
+        {option.label}
+      </label>
+    )
+  })}
 </div>
 
       <Filters
-        selectedNsi={selectedNsi}
-        selectedLlm={selectedLlm}
-        selectedTheme={selectedTheme}
-        onNsiChange={setSelectedNsi}
-        onLlmChange={setSelectedLlm}
-        onThemeChange={setSelectedTheme}
+        selectedNsis={selectedNsis}
+        selectedLlms={selectedLlms}
+        selectedThemes={selectedThemes}
+        onNsisChange={setSelectedNsis}
+        onLlmsChange={setSelectedLlms}
+        onThemesChange={setSelectedThemes}
       />
 
       <div style={{ marginBottom: '24px' }}>
