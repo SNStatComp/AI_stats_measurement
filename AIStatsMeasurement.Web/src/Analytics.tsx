@@ -67,10 +67,10 @@ function Analytics() {
 
       const endpoint =
         groupBy === 'nsi'
-          ? '/api/analytics/metrics-per-nsi'
+          ? '/api/metrics/analytics/metrics-per-nsi'
           : groupBy === 'model'
-            ? '/api/analytics/metrics-per-model'
-            : '/api/analytics/metrics-per-theme'
+            ? '/api/metrics/analytics/metrics-per-model'
+            : '/api/metrics/analytics/metrics-per-theme'
 
 
       const metricsResponse = await fetch(`${API_BASE_URL}${endpoint}`, {
@@ -88,7 +88,7 @@ function Analytics() {
 
       const metricsData: AnalyticsResponse[] = await metricsResponse.json()
 
-      const weeklyEndpoint = `/api/analytics/weekly/${groupBy}`
+      const weeklyEndpoint = `/api/metrics/analytics/weekly/${groupBy}`
 
       const weeklyResponse = await fetch(`${API_BASE_URL}${weeklyEndpoint}`, {
         method: 'POST',
