@@ -6,6 +6,7 @@ using AI_stats_measurement.Services;
 using Azure;
 using Microsoft.EntityFrameworkCore;
 using System.Diagnostics;
+using System.Text.RegularExpressions;
 
 namespace AI_stats_measurement.Backend.Services
 {
@@ -158,66 +159,63 @@ namespace AI_stats_measurement.Backend.Services
 
             var rows = new List<ExportRow>();
 
-
             foreach (var response in responses)
             {
-                Console.WriteLine($"Processing response {response.Id}, prompt {response.PromptId}, text {response.RawText}");
-                Debug.WriteLine($"Processing response {response.Id}, prompt {response.PromptId}, text {response.RawText}");
-
-                ct.ThrowIfCancellationRequested();
-
-                if (!promptById.TryGetValue(response.PromptId, out var prompt))
+                try
                 {
+                    ct.ThrowIfCancellationRequested();
+
+                    if (!promptById.TryGetValue(response.PromptId, out var prompt))
+                        continue;
+
+                    ParsedModelResponse parsed = prompt.Provider.Trim() switch
+                    {
+                        "CBS" => ModelResponseParser.ParseDutch(response.Id, response.RawText),
+                        "OECD" => ModelResponseParser.ParseEnglish(response.Id, response.RawText),
+                        "StatBank Denmark" => ModelResponseParser.ParseEnglish(response.Id, response.RawText),
+                        _ => throw new InvalidOperationException($"Unsupported NSI: {prompt.Provider}")
+                    };
+
+                    _context.ParsedModelResponses.Add(parsed);
+                    await _context.SaveChangesAsync(ct);
+
+                    await _sourceNormalizer.AttachNormalizedSourcesAsync(parsed, ct);
+
+                    var fact = _checker.Check(parsed, prompt.Answer, "NSI");
+                    _context.FactCheckResults.Add(fact);
+
+                    rows.Add(new ExportRow(
+                        response.Id,
+                        prompt.Theme,
+                        prompt.Question,
+                        prompt.Answer,
+                        prompt.Source.Url,
+                        parsed.Answer,
+                        parsed.ParsedModelResponseSources.Select(x => x.SourceId).ToList(),
+                        response.Provider,
+                        response.RawText,
+                        response.Exception,
+                        0,
+                        fact.RelativeError,
+                        fact.AnswerIsCorrect,
+                        fact.SourceIsCorrect,
+                        response.CreatedUtc
+                    ));
+
+                    await _context.SaveChangesAsync(ct);
+                }
+                catch (RegexMatchTimeoutException ex)
+                {
+                    Console.WriteLine($"Regex timeout skipped. ResponseId={response.Id}");
+                    Console.WriteLine(ex.Message);
                     continue;
                 }
-
-                ParsedModelResponse? parsed = prompt.Provider switch
+                catch (Exception ex)
                 {
-                    "CBS" => ModelResponseParser.ParseDutch(response.Id, response.RawText),
-                    "OECD" => ModelResponseParser.ParseEnglish(response.Id, response.RawText),
-                    "StatBank Denmark" => ModelResponseParser.ParseEnglish(response.Id, response.RawText),
-                    _ => throw new InvalidOperationException($"Unsupported NSI: {prompt.Provider}")
-                };
-
-                if (parsed is null)
-                {
-                    throw new InvalidOperationException(
-                        $"Parser returned null for ModelResponse {response.Id} ({prompt.Provider}).");
+                    Console.WriteLine($"Response skipped. ResponseId={response.Id}");
+                    Console.WriteLine(ex.ToString());
+                    continue;
                 }
-
-                await _sourceNormalizer.AttachNormalizedSourcesAsync(parsed, ct);
-
-                _context.ParsedModelResponses.Add(parsed);
-                await _context.SaveChangesAsync(ct);
-
-                // Step 4: Fact-check the parsed response
-                var fact = _checker.Check(parsed, prompt.Answer, "NSI");
-
-                _context.FactCheckResults.Add(fact);
-                await _context.SaveChangesAsync(ct);
-
-                var actualSources = parsed.ParsedModelResponseSources
-                    .Select(p => p.SourceId)
-                    .ToList();
-
-                // Step 5: Create export rows
-                rows.Add(new ExportRow(
-                    modelResponseId: response.Id,
-                    theme: prompt.Theme,
-                    question: prompt.Question,
-                    expectedAnswer: prompt.Answer,
-                    expectedSource: prompt.Source.Url,
-                    actualAnswer: parsed.Answer,
-                    actualSource: actualSources,
-                    provider: response.Provider,
-                    rawText: response.RawText,
-                    exception: response.Exception,
-                    squareMeanRootError: 0,
-                    relativeError: fact.RelativeError,
-                    answerIsCorrect: fact.AnswerIsCorrect,
-                    sourceIsCorrect: fact.SourceIsCorrect,
-                    createdUtc: response.CreatedUtc
-                ));
             }
 
             _context.ExportRows.AddRange(rows);
