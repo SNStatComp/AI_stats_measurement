@@ -15,14 +15,17 @@ namespace AI_stats_measurement.Backend.Services.Parsing
                 TimeSpan.FromMilliseconds(100)
             );
 
+            text = Regex.Replace(text, @"\b\d{1,2}\s*[-–]\s*\d{1,2}\s*(jaar|years?|year olds?|years old)?\b", "", RegexOptions.IgnoreCase, TimeSpan.FromMilliseconds(100)); // remove age ranges like "18-25 jaar" or "18-25 years old"
+
+            text = Regex.Replace(text,@"\b\d{1,2}\s*-\s*tot\s*\d{1,2}-?jarigen\b|\b\d{1,2}\s*tot\s*\d{1,2}\s*jaar\b|\b\d{1,2}\s*-\s*\d{1,2}-?jarigen\b","",RegexOptions.IgnoreCase,TimeSpan.FromMilliseconds(100)); // remove age ranges like "18-25 jarigen", "18 tot 25 jaar", "18-25 jarigen"
+
             text = Regex.Replace(text, @"(\b(approximately|approx\.?|around|between)\b\s*)?(\d[\d,]*)\s*[–—-]\s*(\d[\d,]*)","$3 $4", RegexOptions.IgnoreCase, TimeSpan.FromMilliseconds(100)); // remove minus in approximates
 
             text = Regex.Replace(text, @"https?:\/\/\S+", "", RegexOptions.IgnoreCase, TimeSpan.FromMilliseconds(100)); // remove urls
             text = Regex.Replace(text, @"\*\*", "", RegexOptions.IgnoreCase, TimeSpan.FromMilliseconds(100));           // markdown bold
             text = Regex.Replace(text, @"\b(19|20)\d{2}-\w+", "", RegexOptions.IgnoreCase, TimeSpan.FromMilliseconds(100)); // remove patterns like "2020/2021"  
             text = Regex.Replace(text, @"^\d{4}\s*/\s*\d{4}$", "", RegexOptions.IgnoreCase, TimeSpan.FromMilliseconds(100)); // remove standalone year ranges like "1990/2000"
-            text = Regex.Replace(text, @"(?is)\n\s*\*{0,2}\s*(bron|source)\s*:\s*.*$", "", RegexOptions.IgnoreCase, TimeSpan.FromMilliseconds(100)); // remove eveting after with "Source:" or "Bron:"
-            text = Regex.Replace(text, @"\b\d{1,2}\s*[-–]\s*\d{1,2}\s*(jaar|years)?\b", "", RegexOptions.IgnoreCase, TimeSpan.FromMilliseconds(100)); // remove patterns like "5-10 jaar"
+            text = Regex.Replace(text, @"(?is)\n\s*\*{0,2}\s*(bron|source)\s*:\s*.*$", "", RegexOptions.IgnoreCase, TimeSpan.FromMilliseconds(100)); // remove eveting after with "Source:" or "Bron:"         
             text = Regex.Replace(text, @"\b(19|20)\d{2}\s*=\s*\d+\b", "", RegexOptions.IgnoreCase, TimeSpan.FromMilliseconds(100)); // remove patterns like "2021=100"
             text = Regex.Replace(text, @"\[\[\s*\d+\s*\]\]", "", RegexOptions.IgnoreCase, TimeSpan.FromMilliseconds(100)); // remove citations like [[1]]
             text = Regex.Replace(text, @"\bin\s+(19|20)\d{2}\b", "", RegexOptions.IgnoreCase, TimeSpan.FromMilliseconds(100)); // remove years "in 2021"
@@ -38,7 +41,8 @@ namespace AI_stats_measurement.Backend.Services.Parsing
 
             text = Regex.Replace(text, @"\b(aged|age|leeftijd)?\s*\d{1,3}\s*(to|tot)\s*\d{1,3}\s*(jaar|years)?\b", "", RegexOptions.IgnoreCase, TimeSpan.FromMilliseconds(100)); // remove patterns like "age 5 to 10 years" or "leeftijd 5 tot 10 jaar"
 
-            
+            text = Regex.Replace(text, @"\b\w+\s+digit\s+\d+\b", "", RegexOptions.IgnoreCase, TimeSpan.FromMilliseconds(100)); // remove patterns like "5 digit 12345" which can be misinterpreted as a number
+
             return text;
         }
     }
