@@ -305,4 +305,50 @@ public class ModelResponseParserTests
 
         Assert.Equal(110000m, parsed.Answer);
     }
+
+    [Fact]
+    public void Parse_Returns_Zero_Ignore_Age_Year_Range_English()
+    {
+        var text = "the median annual personal income for 25-29 year olds";
+
+        var parsed = ModelResponseParser.ParseEnglish(0, text);
+
+        Assert.Equal(0, parsed.Answer);
+    }
+
+    [Fact]
+    public void Parse_Returns_Zero_Ignore_Digit_Dutch()
+    {
+        var text = "(SBI-sector I, eerste digit 5)";
+
+        var parsed = ModelResponseParser.ParseDutch(0, text);
+        Assert.Equal(0, parsed.Answer);
+    }
+
+    [Fact]
+    public void Parse_Returns_Answer_Age_Range_Dutch()
+    {
+        var text = "**gemiddelde reisduur per persoon per dag voor 18- tot 25-jarigen in 2021: 75,12 minuten**";
+
+        var parsed = ModelResponseParser.ParseDutch(0, text);
+        Assert.Equal(75.12m, parsed.Answer);
+    }
+
+    [Fact]
+    public void Parse_Returns_Zero_Age_Range_English()
+    {
+        var text = "men and women aged 25-29";
+
+        var parsed = ModelResponseParser.ParseEnglish(0, text);
+        Assert.Equal(0, parsed.Answer);
+    }
+
+    [Fact]
+    public void Parse_Returns_Answer_Age_Range_English()
+    {
+        var text = " the** median net wealth** for people aged **60–64** was** DKK 1,848,760**";
+
+        var parsed = ModelResponseParser.ParseEnglish(0, text);
+        Assert.Equal(1848760m, parsed.Answer);
+    }
 }

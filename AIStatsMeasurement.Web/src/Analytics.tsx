@@ -151,13 +151,13 @@ function Analytics() {
           borderRadius: '12px',
           fontWeight: 600,
           transition: 'all 0.2s ease',
-          background: active ? '#2563eb' : '#f8fafc',
+          background: active ? '#22365a' : '#f8fafc',
           color: active ? 'white' : '#0f172a',
           border: active
-            ? '1px solid #2563eb'
+            ? '1px solid #22365a'
             : '1px solid #e2e8f0',
           boxShadow: active
-            ? '0 4px 10px rgba(37,99,235,0.25)'
+            ? '0 4px 10px rgba(16, 30, 62, 0.25)'
             : 'none'
         }}
       >
