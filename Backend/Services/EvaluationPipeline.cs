@@ -5,6 +5,7 @@ using AI_stats_measurement.Data;
 using AI_stats_measurement.Services;
 using Azure;
 using Microsoft.EntityFrameworkCore;
+using System.Diagnostics;
 
 namespace AI_stats_measurement.Backend.Services
 {
@@ -160,6 +161,9 @@ namespace AI_stats_measurement.Backend.Services
 
             foreach (var response in responses)
             {
+                Console.WriteLine($"Processing response {response.Id}, prompt {response.PromptId}, text {response.RawText}");
+                Debug.WriteLine($"Processing response {response.Id}, prompt {response.PromptId}, text {response.RawText}");
+
                 ct.ThrowIfCancellationRequested();
 
                 if (!promptById.TryGetValue(response.PromptId, out var prompt))
