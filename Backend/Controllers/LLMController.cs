@@ -6,6 +6,7 @@ using AI_stats_measurement.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace AI_stats_measurement.Controllers
@@ -72,17 +73,27 @@ namespace AI_stats_measurement.Controllers
 
         [Authorize]
         [HttpPost("recalculate")]
-        public IActionResult Recalculate(CancellationToken ct)
+        public IActionResult Recalculate()
         {
             _ = Task.Run(async () =>
             {
                 using var scope = HttpContext.RequestServices.CreateScope();
-                var pipeline = scope.ServiceProvider.GetRequiredService<EvaluationPipeline>();
+
+                var pipeline = scope.ServiceProvider
+                    .GetRequiredService<EvaluationPipeline>();
+
+                var context = scope.ServiceProvider
+                    .GetRequiredService<AIMeasureDbContext>();
+
+                context.Database.SetCommandTimeout(300);
 
                 await pipeline.RecalculateAsync(CancellationToken.None);
             });
 
-            return Accepted(new { message = "Recalculation started" });
+            return Accepted(new
+            {
+                message = "Recalculation started"
+            });
         }
 
         public class RunRequest

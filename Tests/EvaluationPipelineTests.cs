@@ -156,5 +156,71 @@ namespace AI_stats_measurement.Tests
             Assert.Equal(10, row.ActualAnswer);
             Assert.True(row.AnswerIsCorrect);
         }
+
+        [Fact]
+        public async Task RecalculateAsync_Creates_New_ExportRows_For_Three_Nsis()
+        {
+            var connection = new SqliteConnection("DataSource=:memory:");
+            await connection.OpenAsync();
+
+            var options = new DbContextOptionsBuilder<AIMeasureDbContext>()
+                .UseSqlite(connection)
+                .Options;
+
+            await using var context = new AIMeasureDbContext(options);
+            await context.Database.EnsureCreatedAsync();
+
+            var source = new Source
+            {
+                Name = "Test Source",
+                Url = "https://example.com",
+                Type = "NSI"
+            };
+
+            context.Sources.Add(source);
+
+            var prompts = new List<Prompt>
+            {
+                new Prompt("CBS", "test", "test", DateTime.Now, "none", "Hoeveel keer past 10 in 100?", 10, source, ""),
+                new Prompt("OECD", "test", "test", DateTime.Now, "none", "How many times does 10 fit into 100?", 10, source, ""),
+                new Prompt("StatBank Denmark", "test", "test", DateTime.Now, "none", "How many times does 10 fit into 100?", 10, source, "")
+            };
+
+            context.Prompts.AddRange(prompts);
+            await context.SaveChangesAsync();
+
+            context.ModelResponses.AddRange(
+                new ModelResponse(prompts[0].Id, "gpt", "Het antwoord is 10.", null, null),
+                new ModelResponse(prompts[1].Id, "gpt", "The answer is 10.", null, null),
+                new ModelResponse(prompts[2].Id, "gpt", "The answer is 10.", null, null)
+            );
+
+            await context.SaveChangesAsync();
+
+            var pipeline = new EvaluationPipeline(
+                llmAggregator: null!,
+                checker: new FactChecker(0.05m, "CBS"),
+                context: context,
+                sourceNormalizer: new SourceNormalizer(context)
+            );
+
+            var result = await pipeline.RecalculateAsync(CancellationToken.None);
+
+            Assert.Equal(3, result.Count);
+            Assert.Equal(3, context.ExportRows.Count());
+            Assert.Equal(3, context.ParsedModelResponses.Count());
+            Assert.Equal(3, context.FactCheckResults.Count());
+
+            Assert.Contains(result, r => r.Question == "Hoeveel keer past 10 in 100?");
+            Assert.Contains(result, r => r.Question == "How many times does 10 fit into 100?");
+
+            Assert.All(result, row =>
+            {
+                Assert.Equal("test", row.Theme);
+                Assert.Equal(10, row.ExpectedAnswer);
+                Assert.Equal(10, row.ActualAnswer);
+                Assert.True(row.AnswerIsCorrect);
+            });
+        }
     }
 }
