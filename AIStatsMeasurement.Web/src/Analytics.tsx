@@ -51,6 +51,8 @@ function Analytics() {
   const [results, setResults] = useState<AnalyticsResponse[]>([])
   const [chartData, setChartData] = useState<MetricsPerNsi>({})
   const [groupBy, setGroupBy] = useState<'nsi' | 'model' | 'theme'>('nsi')
+  const [startDate, setStartDate] = useState('')
+  const [endDate, setEndDate] = useState('')
 
   const handleSend = async () => {
     setIsLoading(true)
@@ -122,56 +124,154 @@ function Analytics() {
     <div className="page-content">
       <h1 style={{ marginBottom: '24px' }}>Analytics</h1>
 
+      
       <div
   style={{
     display: 'flex',
-    gap: '12px',
-    padding: '12px',
-    background: '#ffffff',
-    border: '1px solid #e2e8f0',
-    borderRadius: '16px',
-    boxShadow: '0 4px 14px rgba(15, 23, 42, 0.06)',
-    marginBottom: '20px',
-    width: 'fit-content'
+    gap: '30px',
+    alignItems: 'stretch',
+    marginBottom: '26px',
+    flexWrap: 'wrap'
   }}
 >
-  {[
-    { value: 'nsi', label: 'NSI' },
-    { value: 'model', label: 'Model' },
-    { value: 'theme', label: 'Theme' }
-  ].map((option) => {
-    const active = groupBy === option.value
+  {/* Group result by */}
+  <div
+    style={{
+      padding: '20px',
+      background: '#ffffff',
+      border: '1px solid #e2e8f0',
+      borderRadius: '16px',
+      boxShadow: '0 4px 14px rgba(15, 23, 42, 0.06)',
+      minHeight: '158px',
+      width: 'fit-content'
+    }}
+  >
+    <h3
+      style={{
+        margin: '0 0 14px 0',
+        fontSize: '18px',
+        fontWeight: 700,
+        color: '#0f172a'
+      }}
+    >
+      Group result by
+    </h3>
 
-    return (
-      <label
-        key={option.value}
-        style={{
-          cursor: 'pointer',
-          padding: '10px 18px',
-          borderRadius: '12px',
-          fontWeight: 600,
-          transition: 'all 0.2s ease',
-          background: active ? '#22365a' : '#f8fafc',
-          color: active ? 'white' : '#0f172a',
-          border: active
-            ? '1px solid #22365a'
-            : '1px solid #e2e8f0',
-          boxShadow: active
-            ? '0 4px 10px rgba(16, 30, 62, 0.25)'
-            : 'none'
-        }}
-      >
+    <div
+      style={{
+        display: 'flex',
+        gap: '12px'
+      }}
+    >
+      {[
+        { value: 'nsi', label: 'NSI' },
+        { value: 'model', label: 'Model' },
+        { value: 'theme', label: 'Theme' }
+      ].map((option) => {
+        const active = groupBy === option.value
+
+        return (
+          <label
+            key={option.value}
+            style={{
+              cursor: 'pointer',
+              padding: '14px 22px',
+              borderRadius: '12px',
+              fontWeight: 600,
+              transition: 'all 0.2s ease',
+              background: active ? '#22365a' : '#f8fafc',
+              color: active ? 'white' : '#0f172a',
+              border: active
+                ? '1px solid #22365a'
+                : '1px solid #e2e8f0',
+              boxShadow: active
+                ? '0 4px 10px rgba(16, 30, 62, 0.25)'
+                : 'none'
+            }}
+          >
+            <input
+              type="radio"
+              checked={active}
+              onChange={() =>
+                setGroupBy(option.value as 'nsi' | 'model' | 'theme')
+              }
+              style={{ display: 'none' }}
+            />
+
+            {option.label}
+          </label>
+        )
+      })}
+    </div>
+  </div>
+
+  {/* Select period */}
+  <div
+    style={{
+      padding: '20px',
+      background: '#ffffff',
+      border: '1px solid #e2e8f0',
+      borderRadius: '16px',
+      boxShadow: '0 4px 14px rgba(15, 23, 42, 0.06)',
+      minHeight: '158px',
+      width: 'fit-content'
+    }}
+  >
+    <h3
+      style={{
+        margin: '0 0 14px 0',
+        fontSize: '18px',
+        fontWeight: 700,
+        color: '#0f172a'
+      }}
+    >
+      Select period
+    </h3>
+
+    <div
+      style={{
+        display: 'flex',
+        gap: '20px',
+        alignItems: 'end'
+      }}
+    >
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+        <label style={{ fontWeight: 600, color: '#0f172a' }}>
+          Start date
+        </label>
+
         <input
-          type="radio"
-          checked={active}
-          onChange={() => setGroupBy(option.value as 'nsi' | 'model' | 'theme')}
-          style={{ display: 'none' }}
+          type="date"
+          value={startDate}
+          onChange={(e) => setStartDate(e.target.value)}
+          style={{
+            padding: '12px 14px',
+            borderRadius: '10px',
+            border: '1px solid #e2e8f0',
+            fontSize: '14px'
+          }}
         />
+      </div>
 
-        {option.label}
-      </label>
-    )
-  })}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+        <label style={{ fontWeight: 600, color: '#0f172a' }}>
+          End date
+        </label>
+
+        <input
+          type="date"
+          value={endDate}
+          onChange={(e) => setEndDate(e.target.value)}
+          style={{
+            padding: '12px 14px',
+            borderRadius: '10px',
+            border: '1px solid #e2e8f0',
+            fontSize: '14px'
+          }}
+        />
+      </div>
+    </div>
+  </div>
 </div>
 
       <Filters

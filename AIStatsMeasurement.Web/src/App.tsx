@@ -7,6 +7,7 @@ import CreatePrompt from "./CreatePrompt.tsx";
 import LoginPage from "./LoginPage.tsx";
 import ModelResponses from "./ModelResponsesPage.tsx";
 import AdminPage from "./pages/AdminPage.tsx";
+import './App.css'
 
 function App() {
   //const token = localStorage.getItem("token");
@@ -18,6 +19,9 @@ function App() {
   return (
     <BrowserRouter>
       <Navbar />
+
+      <div className="watermark">Work in progress</div>
+
       <Routes>
         <Route path="/" element={<Analytics />} />
         <Route path="/run" element={<RunSinglePrompt />} />

@@ -1,0 +1,11 @@
+.watermark {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  opacity: 0.25;
+  font-size: 35px;
+  font-weight: bold;
+  color: gray;
+  pointer-events: none;
+  z-index: 9999;
+}
