@@ -64,7 +64,9 @@ function Analytics() {
       const filterBody = {
         nsis: selectedNsis,
         llms: selectedLlms,
-        themes: selectedThemes
+        themes: selectedThemes,
+        startDate: startDate || null,
+        endDate: endDate || null
       }
 
       const endpoint =
