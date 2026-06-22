@@ -93,7 +93,7 @@ namespace AI_stats_measurement.Backend.Controllers
                         .ThenInclude(mr => mr.Prompt)
                 .AsQueryable();
 
-            PeriodeFilter(factsQuery, filter.StartDate, filter.EndDate);
+            factsQuery = PeriodeFilter(factsQuery, filter.StartDate, filter.EndDate);
 
             // Filter out records with exceptions in the model response
             factsQuery = factsQuery.Where(f => f.ParsedModelResponse.ModelResponse.Exception == null);
@@ -154,16 +154,18 @@ namespace AI_stats_measurement.Backend.Controllers
         {
             if (startDate.HasValue)
             {
+                var startUtc = DateTime.SpecifyKind(startDate.Value, DateTimeKind.Utc);
+
                 factCheckResults = factCheckResults.Where(f =>
-                    f.ParsedModelResponse.ModelResponse.CreatedUtc >= startDate.Value);
+                    f.ParsedModelResponse.ModelResponse.CreatedUtc >= startUtc);
             }
 
             if (endDate.HasValue)
             {
-                var endDateExclusive = endDate.Value.Date.AddDays(1);
+                var endUtc = DateTime.SpecifyKind(endDate.Value.Date.AddDays(1), DateTimeKind.Utc);
 
                 factCheckResults = factCheckResults.Where(f =>
-                    f.ParsedModelResponse.ModelResponse.CreatedUtc < endDateExclusive);
+                    f.ParsedModelResponse.ModelResponse.CreatedUtc < endUtc);
             }
 
             return factCheckResults;
