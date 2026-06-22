@@ -34,7 +34,7 @@ namespace AI_stats_measurement.Backend.Controllers
                         .ThenInclude(mr => mr.Prompt)
                 .AsQueryable();
 
-            PeriodeFilter(factsQuery, filter.StartDate, filter.EndDate);
+            factsQuery = PeriodeFilter(factsQuery, filter.StartDate, filter.EndDate);
 
             // Filter out records with exceptions in the model response
             factsQuery = factsQuery.Where(f => f.ParsedModelResponse.ModelResponse.Exception == null);
@@ -64,7 +64,7 @@ namespace AI_stats_measurement.Backend.Controllers
                         .ThenInclude(mr => mr.Prompt)
                 .AsQueryable();
 
-            PeriodeFilter(factsQuery,filter.StartDate, filter.EndDate);
+            factsQuery = PeriodeFilter(factsQuery,filter.StartDate, filter.EndDate);
 
             // Filter out records with exceptions in the model response
             factsQuery = factsQuery.Where(f => f.ParsedModelResponse.ModelResponse.Exception == null);
@@ -123,7 +123,7 @@ namespace AI_stats_measurement.Backend.Controllers
                 .Where(f => f.ParsedModelResponse.ModelResponse.Exception == null)
                 .AsQueryable();
 
-            PeriodeFilter(factsQuery, filter.StartDate, filter.EndDate);
+            factsQuery = PeriodeFilter(factsQuery, filter.StartDate, filter.EndDate);
 
             var facts = factsQuery.ToList();
 
