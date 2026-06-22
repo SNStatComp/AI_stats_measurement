@@ -1,4 +1,5 @@
 ﻿using AI_stats_measurement.Backend.Dto;
+using AI_stats_measurement.Backend.Models;
 using AI_stats_measurement.Backend.Services;
 using AI_stats_measurement.Data;
 using Microsoft.AspNetCore.Mvc;
@@ -33,6 +34,8 @@ namespace AI_stats_measurement.Backend.Controllers
                         .ThenInclude(mr => mr.Prompt)
                 .AsQueryable();
 
+            PeriodeFilter(factsQuery, filter.StartDate, filter.EndDate);
+
             // Filter out records with exceptions in the model response
             factsQuery = factsQuery.Where(f => f.ParsedModelResponse.ModelResponse.Exception == null);
 
@@ -61,6 +64,8 @@ namespace AI_stats_measurement.Backend.Controllers
                         .ThenInclude(mr => mr.Prompt)
                 .AsQueryable();
 
+            PeriodeFilter(factsQuery,filter.StartDate, filter.EndDate);
+
             // Filter out records with exceptions in the model response
             factsQuery = factsQuery.Where(f => f.ParsedModelResponse.ModelResponse.Exception == null);
 
@@ -88,6 +93,8 @@ namespace AI_stats_measurement.Backend.Controllers
                         .ThenInclude(mr => mr.Prompt)
                 .AsQueryable();
 
+            PeriodeFilter(factsQuery, filter.StartDate, filter.EndDate);
+
             // Filter out records with exceptions in the model response
             factsQuery = factsQuery.Where(f => f.ParsedModelResponse.ModelResponse.Exception == null);
 
@@ -104,9 +111,9 @@ namespace AI_stats_measurement.Backend.Controllers
         }
 
         [HttpPost("analytics/weekly/{groupBy}")]
-        public async Task<ActionResult<Dictionary<string, MetricsOverTimeDto>>> GetWeeklyMetrics( string groupBy, [FromBody] MetricsFilterDto filter)
+        public async Task<ActionResult<Dictionary<string, MetricsOverTimeDto>>> GetWeeklyMetrics(string groupBy, [FromBody] MetricsFilterDto filter)
         {
-            var facts = await _context.FactCheckResults
+            var factsQuery = _context.FactCheckResults
                 .Include(f => f.ParsedModelResponse)
                     .ThenInclude(pmr => pmr.ParsedModelResponseSources)
                         .ThenInclude(s => s.Source)
@@ -114,7 +121,11 @@ namespace AI_stats_measurement.Backend.Controllers
                     .ThenInclude(pmr => pmr.ModelResponse)
                         .ThenInclude(mr => mr.Prompt)
                 .Where(f => f.ParsedModelResponse.ModelResponse.Exception == null)
-                .ToListAsync();
+                .AsQueryable();
+
+            PeriodeFilter(factsQuery, filter.StartDate, filter.EndDate);
+
+            var facts = factsQuery.ToList();
 
             var result = groupBy.ToLower() switch
             {
@@ -136,6 +147,26 @@ namespace AI_stats_measurement.Backend.Controllers
             }
 
             return Ok(result);
+        }
+
+
+        private IQueryable<FactCheckResult> PeriodeFilter(IQueryable<FactCheckResult> factCheckResults, DateTime? startDate, DateTime? endDate)
+        {
+            if (startDate.HasValue)
+            {
+                factCheckResults = factCheckResults.Where(f =>
+                    f.ParsedModelResponse.ModelResponse.CreatedUtc >= startDate.Value);
+            }
+
+            if (endDate.HasValue)
+            {
+                var endDateExclusive = endDate.Value.Date.AddDays(1);
+
+                factCheckResults = factCheckResults.Where(f =>
+                    f.ParsedModelResponse.ModelResponse.CreatedUtc < endDateExclusive);
+            }
+
+            return factCheckResults;
         }
     }
 }
