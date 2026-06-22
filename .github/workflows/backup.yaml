@@ -1,0 +1,35 @@
+name: Monthly JSON Backup
+
+on:
+  schedule:
+    - cron: "0 0 1 * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  backup-json:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Create backups folder
+        run: mkdir -p backups
+
+      - name: Download JSON export from backend
+        run: |
+          curl -fSL "https://ai-stats-measurement.lab.sspcloud.fr/api/datatransfer/export" \
+            -H "Accept: application/json" \
+            -o backups/backup-$(date -u +'%Y-%m-%d_%H-%M-%S').json
+
+      - name: Commit and push backup
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+
+          git add backups/*.json
+          git commit -m "Add monthly JSON backup $(date -u +'%Y-%m')" || echo "No changes to commit"
+          git push
