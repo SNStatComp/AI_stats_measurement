@@ -460,7 +460,7 @@ function ModelResponsesPage() {
                         ? result.actualSourceDetails
                             .map(
                               (source) =>
-                                source.name ?? source.url ?? `Source ${source.id}`
+                                source.url ?? `Source ${source.id}`
                             )
                             .join(', ')
                         : '-'}

@@ -86,22 +86,6 @@ namespace AI_stats_measurement.Backend.Controllers
                 );
             }
 
-            if (filter.StartDate.HasValue)
-            {
-                query = query.Where(f =>
-                    f.ParsedModelResponse.ModelResponse.CreatedUtc >= filter.StartDate.Value
-                );
-            }
-
-            if (filter.EndDate.HasValue)
-            {
-                var endDateInclusive = filter.EndDate.Value.Date.AddDays(1);
-
-                query = query.Where(f =>
-                    f.ParsedModelResponse.ModelResponse.CreatedUtc < endDateInclusive
-                );
-            }
-
             var rows = await query
                 .Select(f => new ExportRow(
                     f.ParsedModelResponse.ModelResponse.Id,

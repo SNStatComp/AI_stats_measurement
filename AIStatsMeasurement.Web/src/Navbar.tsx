@@ -88,7 +88,7 @@ function Navbar() {
             to="/model-responses"
             className={location.pathname === "/model-responses" ? "active" : ""}
           >
-            Model Responses
+            Tableview
           </Link>
 
           <div className="auth-section">
