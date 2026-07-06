@@ -219,7 +219,7 @@ function ModelResponsesPage() {
 
   return (
     <div className="app-container">
-      <h1>Model Responses</h1>
+      <h1>Tableview</h1>
 
       <div className="prompt-select">
         <label>
