@@ -2,6 +2,7 @@ import { type FormEvent, useState, useEffect } from 'react'
 import './RunSinglePrompt.css'
 import { API_BASE_URL } from '../config'
 import { apiFetch } from './apiFetch'
+import { Filters } from './components/Filters'
 
 type Prompt = {
   id: number
@@ -66,6 +67,11 @@ function ModelResponsesPage() {
   const [error, setError] = useState('')
   const [isExportOpen, setIsExportOpen] = useState(false)
 
+  const [selectedNsis, setSelectedNsis] = useState<string[]>([])
+  const [selectedThemes, setSelectedThemes] = useState<string[]>([])
+  const [startDate, setStartDate] = useState('')
+  const [endDate, setEndDate] = useState('')
+
   useEffect(() => {
     apiFetch(`${API_BASE_URL}/api/prompts`)
       .then((res) => res.json())
@@ -73,17 +79,18 @@ function ModelResponsesPage() {
       .catch(() => setError('Failed loading prompts'))
   }, [])
 
-  const handlePromptSelect = (id: number) => {
+  const handlePromptSelect = (id: number | null) => {
     setSelectedPromptId(id)
 
-    const prompt = prompts.find((p) => p.id === id)
-
-    if (prompt) {
-      setSubmittedQuestion(prompt.question)
-    } else {
+    if (id === null) {
       setSubmittedQuestion('')
+      setResults([])
+      setError('')
+      return
     }
 
+    const prompt = prompts.find((p) => p.id === id)
+    setSubmittedQuestion(prompt?.question ?? '')
     setResults([])
     setError('')
   }
@@ -91,16 +98,29 @@ function ModelResponsesPage() {
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
 
-    if (!selectedPromptId || isLoading) return
+    if (isLoading) return
 
     setIsLoading(true)
     setError('')
     setResults([])
+    setIsExportOpen(false)
 
     try {
-      const response = await apiFetch(
-        `${API_BASE_URL}/api/exportrows/byPrompt/${selectedPromptId}`
-      )
+      const filterBody = {
+        promptId: selectedPromptId,
+        nsis: selectedNsis,
+        themes: selectedThemes,
+        startDate: startDate || null,
+        endDate: endDate || null
+      }
+
+      const response = await apiFetch(`${API_BASE_URL}/api/exportrows/filter`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(filterBody)
+      })
 
       if (!response.ok) {
         const errorText = await response.text()
@@ -199,7 +219,7 @@ function ModelResponsesPage() {
 
   return (
     <div className="app-container">
-      <h1>Model Responses By Prompt</h1>
+      <h1>Model Responses</h1>
 
       <div className="prompt-select">
         <label>
@@ -208,10 +228,13 @@ function ModelResponsesPage() {
 
         <select
           value={selectedPromptId ?? ''}
-          onChange={(e) => handlePromptSelect(Number(e.target.value))}
+          onChange={(e) => {
+            const value = e.target.value
+            handlePromptSelect(value ? Number(value) : null)
+          }}
           className="select-input"
         >
-          <option value="">-- Select prompt --</option>
+          <option value="">-- All prompts --</option>
 
           {prompts.map((p) => (
             <option key={p.id} value={p.id}>
@@ -220,6 +243,96 @@ function ModelResponsesPage() {
           ))}
         </select>
       </div>
+
+      <div
+        style={{
+          display: 'flex',
+          gap: '30px',
+          alignItems: 'stretch',
+          marginBottom: '26px',
+          flexWrap: 'wrap'
+        }}
+      >
+        <div
+          style={{
+            padding: '20px',
+            background: '#ffffff',
+            border: '1px solid #e2e8f0',
+            borderRadius: '16px',
+            boxShadow: '0 4px 14px rgba(15, 23, 42, 0.06)',
+            minHeight: '158px',
+            width: 'fit-content'
+          }}
+        >
+          <h3
+            style={{
+              margin: '0 0 14px 0',
+              fontSize: '18px',
+              fontWeight: 700,
+              color: '#0f172a'
+            }}
+          >
+            Select period
+          </h3>
+
+          <div
+            style={{
+              display: 'flex',
+              gap: '20px',
+              alignItems: 'end'
+            }}
+          >
+            <div
+              style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}
+            >
+              <label style={{ fontWeight: 600, color: '#0f172a' }}>
+                Start date
+              </label>
+
+              <input
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                style={{
+                  padding: '12px 14px',
+                  borderRadius: '10px',
+                  border: '1px solid #e2e8f0',
+                  fontSize: '14px'
+                }}
+              />
+            </div>
+
+            <div
+              style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}
+            >
+              <label style={{ fontWeight: 600, color: '#0f172a' }}>
+                End date
+              </label>
+
+              <input
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                style={{
+                  padding: '12px 14px',
+                  borderRadius: '10px',
+                  border: '1px solid #e2e8f0',
+                  fontSize: '14px'
+                }}
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <Filters
+        selectedNsis={selectedNsis}
+        selectedLlms={[]}
+        selectedThemes={selectedThemes}
+        onNsisChange={setSelectedNsis}
+        onLlmsChange={() => {}}
+        onThemesChange={setSelectedThemes}
+      />
 
       {submittedQuestion && (
         <div className="question-preview">
@@ -234,144 +347,139 @@ function ModelResponsesPage() {
       )}
 
       <form onSubmit={handleSubmit}>
-        <button
-          type="submit"
-          disabled={!selectedPromptId || isLoading}
-          className="run-button"
-        >
+        <button type="submit" disabled={isLoading} className="run-button">
           {isLoading ? 'Loading responses...' : 'Show model responses'}
         </button>
       </form>
 
-      <div
-        style={{
-          position: 'relative',
-          display: 'flex',
-          justifyContent: 'flex-end',
-          marginBottom: '16px'
-        }}
-      >
-        <button
-          type="button"
-          className="run-button"
-          onClick={() => setIsExportOpen((prev) => !prev)}
-          style={{ minWidth: '140px' }}
-        >
-          Export
-        </button>
-
-        {isExportOpen && (
+      {results.length > 0 && (
+        <>
           <div
             style={{
-              position: 'absolute',
-              top: '110%',
-              right: 0,
-              background: '#ffffff',
-              border: '1px solid #e2e8f0',
-              borderRadius: '12px',
-              boxShadow: '0 10px 24px rgba(15, 23, 42, 0.12)',
-              overflow: 'hidden',
-              zIndex: 20,
-              minWidth: '160px'
+              position: 'relative',
+              display: 'flex',
+              justifyContent: 'flex-end',
+              marginBottom: '16px'
             }}
           >
             <button
               type="button"
-              onClick={() => {
-                exportToCsv(results)
-                setIsExportOpen(false)
-              }}
-              style={{
-                width: '100%',
-                padding: '12px 16px',
-                border: 'none',
-                background: '#fff',
-                textAlign: 'left',
-                cursor: 'pointer'
-              }}
+              className="run-button"
+              onClick={() => setIsExportOpen((prev) => !prev)}
+              style={{ minWidth: '140px' }}
             >
-              Export as CSV
+              Export
             </button>
 
-            <button
-              type="button"
-              onClick={() => {
-                exportToJson(results)
-                setIsExportOpen(false)
-              }}
-              style={{
-                width: '100%',
-                padding: '12px 16px',
-                border: 'none',
-                background: '#fff',
-                textAlign: 'left',
-                cursor: 'pointer',
-                borderTop: '1px solid #e2e8f0'
-              }}
-            >
-              Export as JSON
-            </button>
+            {isExportOpen && (
+              <div
+                style={{
+                  position: 'absolute',
+                  top: '110%',
+                  right: 0,
+                  background: '#ffffff',
+                  border: '1px solid #e2e8f0',
+                  borderRadius: '12px',
+                  boxShadow: '0 10px 24px rgba(15, 23, 42, 0.12)',
+                  overflow: 'hidden',
+                  zIndex: 20,
+                  minWidth: '160px'
+                }}
+              >
+                <button
+                  type="button"
+                  onClick={() => {
+                    exportToCsv(results)
+                    setIsExportOpen(false)
+                  }}
+                  style={{
+                    width: '100%',
+                    padding: '12px 16px',
+                    border: 'none',
+                    background: '#fff',
+                    textAlign: 'left',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Export as CSV
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    exportToJson(results)
+                    setIsExportOpen(false)
+                  }}
+                  style={{
+                    width: '100%',
+                    padding: '12px 16px',
+                    border: 'none',
+                    background: '#fff',
+                    textAlign: 'left',
+                    cursor: 'pointer',
+                    borderTop: '1px solid #e2e8f0'
+                  }}
+                >
+                  Export as JSON
+                </button>
+              </div>
+            )}
           </div>
-        )}
-      </div>
 
-      <div className="table-wrapper">
-        <table className="results-table">
-          <thead>
-            <tr>
-              <th>#</th>
-              <th>Provider</th>
-              <th>Theme</th>
-              <th>Question</th>
-              <th>Expected Answer</th>
-              <th>Actual Answer</th>
-              <th>Expected Source</th>
-              <th>Actual Sources</th>
-              <th>Answer Correct</th>
-              <th>Source Correct</th>
-              <th>Relative Error</th>
-              <th>Created</th>
-            </tr>
-          </thead>
+          <div className="table-wrapper">
+            <table className="results-table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Provider</th>
+                  <th>Theme</th>
+                  <th>Question</th>
+                  <th>Expected Answer</th>
+                  <th>Actual Answer</th>
+                  <th>Expected Source</th>
+                  <th>Actual Sources</th>
+                  <th>Answer Correct</th>
+                  <th>Source Correct</th>
+                  <th>Relative Error</th>
+                  <th>Created</th>
+                </tr>
+              </thead>
 
-          <tbody>
-            {results.map((result, index) => (
-              <tr key={`${result.provider}-${result.createdUtc}-${index}`}>
-                <td>{index + 1}</td>
-                <td>{result.provider}</td>
-                <td>{result.theme}</td>
-                <td>{result.question}</td>
-                <td>{result.expectedAnswer}</td>
-                <td>{result.actualAnswer}</td>
-                <td>{result.expectedSource}</td>
-
-                <td>
-                  {result.actualSourceDetails.length > 0 ? (
-                    result.actualSourceDetails.map((source) => (
-                      <div key={source.id}>
-                        {source.url ? (
-                          <a href={source.url} target="_blank" rel="noreferrer">
-                            {source.name ?? source.url}
-                          </a>
-                        ) : (
-                          source.name ?? `Source ${source.id}`
-                        )}
-                      </div>
-                    ))
-                  ) : (
-                    <span>-</span>
-                  )}
-                </td>
-
-                <td>{result.answerIsCorrect ? 'Yes' : 'No'}</td>
-                <td>{result.sourceIsCorrect ? 'Yes' : 'No'}</td>
-                <td>{result.relativeError}</td>
-                <td>{new Date(result.createdUtc).toLocaleString()}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+              <tbody>
+                {results.map((result, index) => (
+                  <tr key={`${result.provider}-${result.createdUtc}-${index}`}>
+                    <td>{index + 1}</td>
+                    <td>{result.provider}</td>
+                    <td>{result.theme}</td>
+                    <td>{result.question}</td>
+                    <td>{result.expectedAnswer}</td>
+                    <td>{result.actualAnswer}</td>
+                    <td>{result.expectedSource}</td>
+                    <td>
+                      {result.actualSourceDetails.length > 0
+                        ? result.actualSourceDetails
+                            .map(
+                              (source) =>
+                                source.name ?? source.url ?? `Source ${source.id}`
+                            )
+                            .join(', ')
+                        : '-'}
+                    </td>
+                    <td>{result.answerIsCorrect ? 'Yes' : 'No'}</td>
+                    <td>{result.sourceIsCorrect ? 'Yes' : 'No'}</td>
+                    <td>
+                      {result.relativeError != null
+                        ? result.relativeError.toFixed(2)
+                        : '-'}
+                    </td>
+                    <td>{new Date(result.createdUtc).toLocaleString()}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
+      )}
     </div>
   )
 }
