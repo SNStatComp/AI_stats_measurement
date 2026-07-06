@@ -1,4 +1,5 @@
-﻿using AI_stats_measurement.Backend.Models;
+﻿using AI_stats_measurement.Backend.Dto;
+using AI_stats_measurement.Backend.Models;
 using AI_stats_measurement.Data;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -43,10 +44,12 @@ namespace AI_stats_measurement.Backend.Controllers
         }
 
         // GET: api/ExportRows/byPrompt/5
-        [HttpGet("byPrompt/{promptId}")]
-        public async Task<ActionResult<IEnumerable<ExportRow>>> GetExportRowsByPrompt(int promptId)
+        // POST: api/ExportRows/filter
+        [HttpPost("filter")]
+        public async Task<ActionResult<IEnumerable<ExportRow>>> GetExportRowsByFilter(
+            [FromBody] ExportRowsFilterDto filter)
         {
-            var rows = await _context.FactCheckResults
+            var query = _context.FactCheckResults
                 .Include(f => f.ParsedModelResponse)
                     .ThenInclude(pmr => pmr.ParsedModelResponseSources)
                         .ThenInclude(pmrs => pmrs.Source)
@@ -54,7 +57,50 @@ namespace AI_stats_measurement.Backend.Controllers
                     .ThenInclude(pmr => pmr.ModelResponse)
                         .ThenInclude(mr => mr.Prompt)
                             .ThenInclude(p => p.Source)
-                .Where(f => f.ParsedModelResponse.ModelResponse.Prompt.Id == promptId)
+                .AsQueryable();
+
+            if (filter.PromptId.HasValue)
+            {
+                query = query.Where(f =>
+                    f.ParsedModelResponse.ModelResponse.Prompt.Id == filter.PromptId.Value
+                );
+            }
+
+            if (filter.Nsis != null && filter.Nsis.Any())
+            {
+                query = query.Where(f =>
+                    filter.Nsis.Contains(
+                        f.ParsedModelResponse.ModelResponse.Prompt.Provider
+                    )
+                );
+            }
+
+            if (filter.Themes != null && filter.Themes.Any())
+            {
+                query = query.Where(f =>
+                    filter.Themes.Contains(
+                        f.ParsedModelResponse.ModelResponse.Prompt.Theme
+                    )
+                );
+            }
+
+            if (filter.StartDate.HasValue)
+            {
+                query = query.Where(f =>
+                    f.ParsedModelResponse.ModelResponse.CreatedUtc >= filter.StartDate.Value
+                );
+            }
+
+            if (filter.EndDate.HasValue)
+            {
+                var endDateInclusive = filter.EndDate.Value.Date.AddDays(1);
+
+                query = query.Where(f =>
+                    f.ParsedModelResponse.ModelResponse.CreatedUtc < endDateInclusive
+                );
+            }
+
+            var rows = await query
                 .Select(f => new ExportRow(
                     f.ParsedModelResponse.ModelResponse.Id,
                     f.ParsedModelResponse.ModelResponse.Prompt.Theme,
