@@ -239,3 +239,42 @@ p {
   padding: 12px;
   border-radius: 14px;
 }
+
+.table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  margin-top: 1rem;
+}
+
+.results-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+  font-size: 14px;
+}
+
+.results-table th,
+.results-table td {
+  border: 1px solid #ddd;
+  padding: 10px;
+  text-align: left;
+  vertical-align: top;
+}
+
+.results-table th {
+  background-color: #f3f4f6;
+  font-weight: 600;
+}
+
+.results-table tr:nth-child(even) {
+  background-color: #fafafa;
+}
+
+.results-table a {
+  color: #2563eb;
+  text-decoration: none;
+}
+
+.results-table a:hover {
+  text-decoration: underline;
+}

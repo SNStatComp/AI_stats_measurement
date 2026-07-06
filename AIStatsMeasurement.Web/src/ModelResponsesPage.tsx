@@ -1,6 +1,5 @@
 import { type FormEvent, useState, useEffect } from 'react'
 import './RunSinglePrompt.css'
-import ExportRowCard from './components/ExportRowCard'
 import { API_BASE_URL } from '../config'
 import { apiFetch } from './apiFetch'
 
@@ -65,6 +64,7 @@ function ModelResponsesPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [results, setResults] = useState<ResultWithSources[]>([])
   const [error, setError] = useState('')
+  const [isExportOpen, setIsExportOpen] = useState(false)
 
   useEffect(() => {
     apiFetch(`${API_BASE_URL}/api/prompts`)
@@ -134,6 +134,69 @@ function ModelResponsesPage() {
     }
   }
 
+  const downloadFile = (
+    content: string,
+    fileName: string,
+    contentType: string
+  ) => {
+    const blob = new Blob([content], { type: contentType })
+    const url = URL.createObjectURL(blob)
+
+    const link = document.createElement('a')
+    link.href = url
+    link.download = fileName
+    link.click()
+
+    URL.revokeObjectURL(url)
+  }
+
+  const exportToJson = (results: ResultWithSources[]) => {
+    const json = JSON.stringify(results, null, 2)
+    downloadFile(json, 'llm-results.json', 'application/json')
+  }
+
+  const exportToCsv = (results: ResultWithSources[]) => {
+    if (results.length === 0) return
+
+    const rows = results.map((r) => ({
+      id: r.id,
+      theme: r.theme,
+      question: r.question,
+      expectedAnswer: r.expectedAnswer,
+      expectedSource: r.expectedSource,
+      actualAnswer: r.actualAnswer,
+      actualSources: r.actualSourceDetails
+        .map((source) => source.name ?? source.url ?? `Source ${source.id}`)
+        .join(', '),
+      provider: r.provider,
+      rawText: r.rawText ?? '',
+      exception: r.exception ?? '',
+      squareMeanRootError: r.squareMeanRootError,
+      relativeError: r.relativeError,
+      answerIsCorrect: r.answerIsCorrect,
+      sourceIsCorrect: r.sourceIsCorrect,
+      createdUtc: r.createdUtc
+    }))
+
+    const headers = Object.keys(rows[0])
+
+    const escape = (value: unknown) => {
+      if (value == null) return '""'
+      return `"${String(value).replace(/"/g, '""')}"`
+    }
+
+    const csv = [
+      headers.join(';'),
+      ...rows.map((row) =>
+        headers
+          .map((header) => escape(row[header as keyof typeof row]))
+          .join(';')
+      )
+    ].join('\n')
+
+    downloadFile(csv, 'llm-results.csv', 'text/csv;charset=utf-8;')
+  }
+
   return (
     <div className="app-container">
       <h1>Model Responses By Prompt</h1>
@@ -180,21 +243,135 @@ function ModelResponsesPage() {
         </button>
       </form>
 
-      {results.length > 0 && (
-        <div className="results-section">
-          <h2>Model Responses</h2>
+      <div
+        style={{
+          position: 'relative',
+          display: 'flex',
+          justifyContent: 'flex-end',
+          marginBottom: '16px'
+        }}
+      >
+        <button
+          type="button"
+          className="run-button"
+          onClick={() => setIsExportOpen((prev) => !prev)}
+          style={{ minWidth: '140px' }}
+        >
+          Export
+        </button>
 
-          <div className="results-grid">
-            {results.map((result, index) => (
-              <ExportRowCard
-                key={`${result.provider}-${result.createdUtc}-${index}`}
-                result={result}
-                index={index}
-              />
-            ))}
+        {isExportOpen && (
+          <div
+            style={{
+              position: 'absolute',
+              top: '110%',
+              right: 0,
+              background: '#ffffff',
+              border: '1px solid #e2e8f0',
+              borderRadius: '12px',
+              boxShadow: '0 10px 24px rgba(15, 23, 42, 0.12)',
+              overflow: 'hidden',
+              zIndex: 20,
+              minWidth: '160px'
+            }}
+          >
+            <button
+              type="button"
+              onClick={() => {
+                exportToCsv(results)
+                setIsExportOpen(false)
+              }}
+              style={{
+                width: '100%',
+                padding: '12px 16px',
+                border: 'none',
+                background: '#fff',
+                textAlign: 'left',
+                cursor: 'pointer'
+              }}
+            >
+              Export as CSV
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                exportToJson(results)
+                setIsExportOpen(false)
+              }}
+              style={{
+                width: '100%',
+                padding: '12px 16px',
+                border: 'none',
+                background: '#fff',
+                textAlign: 'left',
+                cursor: 'pointer',
+                borderTop: '1px solid #e2e8f0'
+              }}
+            >
+              Export as JSON
+            </button>
           </div>
-        </div>
-      )}
+        )}
+      </div>
+
+      <div className="table-wrapper">
+        <table className="results-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Provider</th>
+              <th>Theme</th>
+              <th>Question</th>
+              <th>Expected Answer</th>
+              <th>Actual Answer</th>
+              <th>Expected Source</th>
+              <th>Actual Sources</th>
+              <th>Answer Correct</th>
+              <th>Source Correct</th>
+              <th>Relative Error</th>
+              <th>Created</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {results.map((result, index) => (
+              <tr key={`${result.provider}-${result.createdUtc}-${index}`}>
+                <td>{index + 1}</td>
+                <td>{result.provider}</td>
+                <td>{result.theme}</td>
+                <td>{result.question}</td>
+                <td>{result.expectedAnswer}</td>
+                <td>{result.actualAnswer}</td>
+                <td>{result.expectedSource}</td>
+
+                <td>
+                  {result.actualSourceDetails.length > 0 ? (
+                    result.actualSourceDetails.map((source) => (
+                      <div key={source.id}>
+                        {source.url ? (
+                          <a href={source.url} target="_blank" rel="noreferrer">
+                            {source.name ?? source.url}
+                          </a>
+                        ) : (
+                          source.name ?? `Source ${source.id}`
+                        )}
+                      </div>
+                    ))
+                  ) : (
+                    <span>-</span>
+                  )}
+                </td>
+
+                <td>{result.answerIsCorrect ? 'Yes' : 'No'}</td>
+                <td>{result.sourceIsCorrect ? 'Yes' : 'No'}</td>
+                <td>{result.relativeError}</td>
+                <td>{new Date(result.createdUtc).toLocaleString()}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   )
 }
