@@ -59,6 +59,8 @@ namespace AI_stats_measurement.Backend.Controllers
                             .ThenInclude(p => p.Source)
                 .AsQueryable();
 
+            query = PeriodeFilter(query, filter.StartDate, filter.EndDate);
+
             if (filter.PromptId.HasValue)
             {
                 query = query.Where(f =>
@@ -187,5 +189,27 @@ namespace AI_stats_measurement.Backend.Controllers
         {
             return _context.ExportRows.Any(e => e.Id == id);
         }
+
+
+        private IQueryable<FactCheckResult> PeriodeFilter(IQueryable<FactCheckResult> factCheckResults, DateTime? startDate, DateTime? endDate)
+        {
+            if (startDate.HasValue)
+            {
+                var startUtc = DateTime.SpecifyKind(startDate.Value, DateTimeKind.Utc);
+
+                factCheckResults = factCheckResults.Where(f =>
+                    f.ParsedModelResponse.ModelResponse.CreatedUtc >= startUtc);
+            }
+
+            if (endDate.HasValue)
+            {
+                var endUtc = DateTime.SpecifyKind(endDate.Value.Date.AddDays(1), DateTimeKind.Utc);
+
+                factCheckResults = factCheckResults.Where(f =>
+                    f.ParsedModelResponse.ModelResponse.CreatedUtc < endUtc);
+            }
+
+            return factCheckResults;
+        }
     }
-}
+    }
