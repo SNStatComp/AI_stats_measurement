@@ -19,52 +19,6 @@ const modelOptions = [
   'gemini-2.5-pro'
 ]
 
-const downloadFile = (content: string, fileName: string, contentType: string) => {
-  const blob = new Blob([content], { type: contentType })
-  const url = URL.createObjectURL(blob)
-
-  const link = document.createElement('a')
-  link.href = url
-  link.download = fileName
-  link.click()
-
-  URL.revokeObjectURL(url)
-}
-
-const exportToJson = (results: ResultWithSources[]) => {
-  const json = JSON.stringify(results, null, 2)
-  downloadFile(json, 'llm-results.json', 'application/json')
-}
-
-const exportToCsv = (results: ResultWithSources[]) => {
-  const rows = results.map((r) => ({
-    id: r.id,
-    theme: r.theme,
-    question: r.question,
-    expectedAnswer: r.expectedAnswer,
-    expectedSource: r.expectedSource,
-    actualAnswer: r.actualAnswer,
-    provider: r.provider,
-    rawText: r.rawText ?? ''
-  }))
-
-  const headers = Object.keys(rows[0])
-
-  const escape = (value: unknown) => {
-    if (value == null) return '""'
-    return `"${String(value).replace(/"/g, '""')}"`
-  }
-
-  const csv = [
-    headers.join(';'),
-    ...rows.map(row =>
-      headers.map(h => escape(row[h as keyof typeof row])).join(';')
-    )
-  ].join('\n')
-
-  downloadFile(csv, 'results.csv', 'text/csv;charset=utf-8;')
-}
-
 type Prompt = {
   id: number
   theme: string
@@ -105,10 +59,8 @@ function RunMultiplePrompts() {
   const [selectedModels, setSelectedModels] = useState<string[]>([
     'gpt-4o-mini',
     'gemini-2.5-flash-lite',
-    'grok-4-1-fast-non-reasoning'
+    'grok-4.3'
   ])
-
-  const [isExportOpen, setIsExportOpen] = useState(false)
 
   function handleModelToggle(modelName: string) {
     setSelectedModels((prev) =>
@@ -198,6 +150,8 @@ function RunMultiplePrompts() {
       setIsLoading(false)
     }
   }
+
+
 
   return (
     <div className="app-container">
@@ -317,80 +271,6 @@ function RunMultiplePrompts() {
           <strong>{jobStatus}</strong>
         </div>
       )}
-
-      <div>
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'flex-end',
-            marginBottom: '16px'
-          }}
-        >
-          <button
-            type="button"
-            className="run-button"
-            onClick={() => setIsExportOpen((prev) => !prev)}
-            style={{ minWidth: '140px' }}
-          >
-            Export
-          </button>
-
-          {isExportOpen && (
-            <div
-              style={{
-                position: 'absolute',
-                top: '110%',
-                right: 0,
-                background: '#ffffff',
-                border: '1px solid #e2e8f0',
-                borderRadius: '12px',
-                boxShadow: '0 10px 24px rgba(15, 23, 42, 0.12)',
-                overflow: 'hidden',
-                zIndex: 20,
-                minWidth: '160px'
-              }}
-            >
-              <button
-                type="button"
-                onClick={() => {
-                  exportToCsv(results)
-                  setIsExportOpen(false)
-                }}
-                style={{
-                  width: '100%',
-                  padding: '12px 16px',
-                  border: 'none',
-                  background: '#fff',
-                  textAlign: 'left',
-                  cursor: 'pointer'
-                }}
-              >
-                Export as CSV
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  exportToJson(results)
-                  setIsExportOpen(false)
-                }}
-                style={{
-                  width: '100%',
-                  padding: '12px 16px',
-                  border: 'none',
-                  background: '#fff',
-                  textAlign: 'left',
-                  cursor: 'pointer',
-                  borderTop: '1px solid #e2e8f0'
-                }}
-              >
-                Export as JSON
-              </button>
-            </div>
-          )}
-        </div>
-
-      </div>
 
       {error && <div className="error-message">{error}</div>}
 
